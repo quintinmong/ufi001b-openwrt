@@ -67,6 +67,18 @@ jobs:
           export APK_SIGNING_KEY_FILE="$key_file"
           scripts/build.sh '${{ matrix.profile }}'
 
+      - name: Verify repository signing identity
+        if: github.event_name != 'pull_request'
+        env:
+          EXPECTED_PUBLIC_KEY_SHA256: ${{ vars.APK_SIGNING_PUBLIC_KEY_SHA256 }}
+        run: |
+          if [[ ! "$EXPECTED_PUBLIC_KEY_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            echo 'APK_SIGNING_PUBLIC_KEY_SHA256 repository variable is missing or invalid' >&2
+            exit 1
+          fi
+          actual="$(sha256sum "out/${{ matrix.profile }}/apk-signing-public-key.pem" | cut -d' ' -f1)"
+          test "$actual" = "$EXPECTED_PUBLIC_KEY_SHA256"
+
       - name: Upload allow-listed build outputs
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

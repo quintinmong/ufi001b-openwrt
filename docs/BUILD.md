@@ -95,7 +95,8 @@ host configure，再把 bootstrap 内层并发限制为 `min(JOBS, 4)`；这是�
 
 `build.yml` 的 PR 步骤从不注入 Secret，只使用一次性密钥；push 和手工构建
 缺少 Secret 会失败。`release.yml` 同时要求两个 profile 的公钥相同且等于仓库
-Variable，防止错误密钥的包进入 Release。公开 CI 永远不注入私有固件。
+Variable；build 会在上传 artifact 前检查指纹，release 会再次检查两个 profile
+的公钥身份，防止错误密钥的包进入 Release。公开 CI 永远不注入私有固件。
 
 ## 可复现边界
 
