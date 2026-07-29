@@ -27,6 +27,17 @@ BUILD_ROOT=/home/runtian/ufi001b-openwrt-build JOBS=3 \
 `locks/sources.lock.json` 的完整 commit；只允许覆盖本项目管理的 target、
 tool 和 package 路径，发现其他脏改动便终止。
 
+更新自定义 Git 源的 commit 时，必须在 Linux/WSL 用 OpenWrt 相同的规范归档
+规则重新计算 `PKG_MIRROR_HASH`，例如：
+
+```sh
+scripts/compute-mirror-hash.sh qrtr 0.2 \
+  https://github.com/andersson/qrtr.git FULL_40_HEX_COMMIT
+```
+
+把结果同时写入对应 Makefile 与 `locks/sources.lock.json`；
+`verify-locks.py` 会拒绝两处不一致。
+
 开发镜像完成并通过实机硬件检查后，才构建：
 
 ```sh

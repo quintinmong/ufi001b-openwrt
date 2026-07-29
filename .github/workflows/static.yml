@@ -43,9 +43,31 @@ jobs:
 
       - name: Check shell scripts
         run: |
-          shellcheck scripts/build.sh
+          shellcheck scripts/*.sh
           find package -type f \( -path '*/files/etc/init.d/*' -o -path '*/files/etc/board.d/*' -o -path '*/files/etc/uci-defaults/*' -o -path '*/files/etc/hotplug.d/*' \) -print0 |
             xargs -0 -r shellcheck -s sh
+
+      - name: Verify canonical Git mirror hashes
+        run: |
+          check_hash() {
+            name="$1"
+            version="$2"
+            url="$3"
+            commit="$4"
+            expected="$(python3 - "$name" <<'PY'
+          import json
+          import sys
+          with open('locks/sources.lock.json', encoding='utf-8') as handle:
+              print(json.load(handle)['sources'][sys.argv[1]]['source_sha256'])
+          PY
+          )"
+            actual="$(scripts/compute-mirror-hash.sh "$name" "$version" "$url" "$commit" | cut -d' ' -f1)"
+            test "$actual" = "$expected"
+          }
+          check_hash mkbootimg 2021.01.06 https://github.com/osm0sis/mkbootimg.git 8dd5b5b5c68bcf8ecdb5859aa7036df276efcc79
+          check_hash qrtr 0.2 https://github.com/andersson/qrtr.git 9dc7a88548c27983e06465d3fbba2ba27d4bc050
+          check_hash rmtfs 0.2 https://github.com/andersson/rmtfs.git b08ef6f98ec567876d7d45f15c85c6ed00d7c463
+          check_hash rpmsgexport 2018.02.28 https://github.com/andersson/rpmsgexport.git 324d88d668f36c6a5e6a9c2003a050b8a5a3cd60
 
       - name: Parse PowerShell HIL tooling without executing it
         shell: pwsh

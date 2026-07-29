@@ -14,6 +14,12 @@ ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = ROOT / "locks" / "sources.lock.json"
 SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+MIRROR_HASH_FILES = {
+    "mkbootimg": ROOT / "openwrt-overlay/tools/mkbootimg/Makefile",
+    "qrtr": ROOT / "package/qrtr/Makefile",
+    "rmtfs": ROOT / "package/rmtfs/Makefile",
+    "rpmsgexport": ROOT / "package/rpmsgexport/Makefile",
+}
 
 
 def fail(message: str) -> None:
@@ -42,6 +48,17 @@ def main() -> None:
         source_digest = source.get("source_sha256")
         if source_digest is not None and not SHA256_RE.fullmatch(source_digest):
             fail(f"{name}.source_sha256 is not a SHA-256 digest")
+
+    for name, makefile in MIRROR_HASH_FILES.items():
+        match = re.search(
+            r"^PKG_MIRROR_HASH:=([0-9a-f]{64})$",
+            makefile.read_text(encoding="utf-8"),
+            re.MULTILINE,
+        )
+        if not match:
+            fail(f"{makefile.relative_to(ROOT)} lacks PKG_MIRROR_HASH")
+        if match.group(1) != sources[name].get("source_sha256"):
+            fail(f"{name} mirror hash differs between Makefile and source lock")
 
     qcom_firmware = sources.get("qcom_firmware_reference", {})
     if qcom_firmware.get("redistribution") != "private-review-required":
