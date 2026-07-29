@@ -35,6 +35,23 @@ jobs:
       - name: Check out source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+      - name: Preflight repository signing identity
+        if: github.event_name != 'pull_request'
+        env:
+          APK_SIGNING_KEY_PEM: ${{ secrets.APK_SIGNING_KEY_PEM }}
+          EXPECTED_PUBLIC_KEY_SHA256: ${{ vars.APK_SIGNING_PUBLIC_KEY_SHA256 }}
+        run: |
+          if [[ -z "$APK_SIGNING_KEY_PEM" ]]; then
+            echo 'APK_SIGNING_KEY_PEM is missing' >&2
+            exit 1
+          fi
+          if [[ ! "$EXPECTED_PUBLIC_KEY_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            echo 'APK_SIGNING_PUBLIC_KEY_SHA256 is missing or invalid' >&2
+            exit 1
+          fi
+          actual="$(printf '%s\n' "$APK_SIGNING_KEY_PEM" | openssl ec -pubout 2>/dev/null | sha256sum | cut -d' ' -f1)"
+          test "$actual" = "$EXPECTED_PUBLIC_KEY_SHA256"
+
       - name: Install OpenWrt build dependencies
         run: |
           sudo apt-get update
