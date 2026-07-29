@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# OpenWrt rejects non-standard masks because they create broken package modes.
+umask 022
+
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 profile="${1:-developer-ext4}"
 build_root="${BUILD_ROOT:-$HOME/ufi001b-openwrt-build}"

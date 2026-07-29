@@ -78,9 +78,8 @@ jobs:
             echo 'APK_SIGNING_KEY_PEM is required for attested branch builds' >&2
             exit 1
           fi
-          umask 077
           key_file="$RUNNER_TEMP/ufi001b-apk-private-key.pem"
-          printf '%s\n' "$APK_SIGNING_KEY_PEM" > "$key_file"
+          (umask 077; printf '%s\n' "$APK_SIGNING_KEY_PEM" > "$key_file")
           export APK_SIGNING_KEY_FILE="$key_file"
           scripts/build.sh '${{ matrix.profile }}'
 
