@@ -1,0 +1,104 @@
+name: Approved release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing signed tag to release
+        required: true
+        type: string
+      run_id:
+        description: Successful Build firmware workflow run ID
+        required: true
+        type: string
+      publish:
+        description: I explicitly approve creating a GitHub Release
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  release:
+    if: inputs.publish == true
+    environment: release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out approved tag
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+
+      - name: Verify signed tag and matching successful build
+        env:
+          BUILD_RUN_ID: ${{ inputs.run_id }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          tag_object_type="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" --jq .object.type)"
+          tag_object_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" --jq .object.sha)"
+          test "$tag_object_type" = tag
+          verified="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${tag_object_sha}" --jq .verification.verified)"
+          test "$verified" = true
+          tag_sha="$(git rev-list -n1 "${RELEASE_TAG}^{commit}")"
+          run_sha="$(gh run view "$BUILD_RUN_ID" --json headSha --jq .headSha)"
+          conclusion="$(gh run view "$BUILD_RUN_ID" --json conclusion --jq .conclusion)"
+          workflow="$(gh run view "$BUILD_RUN_ID" --json workflowName --jq .workflowName)"
+          event="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${BUILD_RUN_ID}" --jq .event)"
+          test "$tag_sha" = "$run_sha"
+          test "$conclusion" = success
+          test "$workflow" = 'Build firmware'
+          test "$event" = push -o "$event" = workflow_dispatch
+
+      - name: Download developer artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ufi001b-developer-ext4
+          path: release/developer-ext4
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Download stable artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ufi001b-stable-squashfs
+          path: release/stable-squashfs
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Refuse private firmware
+        run: |
+          if grep -R -E 'qcom-ufi001b-(modem|wcnss)' release --include='*.manifest'; then
+            echo 'private Qualcomm firmware must never enter a public release' >&2
+            exit 1
+          fi
+
+      - name: Verify artifact profiles and hashes
+        env:
+          EXPECTED_APK_KEY_SHA256: ${{ vars.APK_SIGNING_PUBLIC_KEY_SHA256 }}
+        run: |
+          test "$(find release/developer-ext4 -maxdepth 1 -name '*-ext4-boot.img' | wc -l)" -eq 1
+          test "$(find release/developer-ext4 -maxdepth 1 -name '*-ext4-rootfs.img' | wc -l)" -eq 1
+          test "$(find release/stable-squashfs -maxdepth 1 -name '*-squashfs-boot.img' | wc -l)" -eq 1
+          test "$(find release/stable-squashfs -maxdepth 1 -name '*-squashfs-rootfs.img' | wc -l)" -eq 1
+          test "$(find release/stable-squashfs -maxdepth 1 -name 'luci-app-openclash-*.apk' | wc -l)" -eq 1
+          test "$(find release/stable-squashfs -maxdepth 1 -name 'mihomo-openclash-*.apk' | wc -l)" -eq 1
+          test "$(find release/developer-ext4 -maxdepth 1 -name 'apk-signing-public-key.pem' | wc -l)" -eq 1
+          test "$(find release/stable-squashfs -maxdepth 1 -name 'apk-signing-public-key.pem' | wc -l)" -eq 1
+          (cd release/developer-ext4 && sha256sum -c SHA256SUMS)
+          (cd release/stable-squashfs && sha256sum -c SHA256SUMS)
+          test -n "$EXPECTED_APK_KEY_SHA256"
+          developer_key_sha="$(sha256sum release/developer-ext4/apk-signing-public-key.pem | cut -d' ' -f1)"
+          stable_key_sha="$(sha256sum release/stable-squashfs/apk-signing-public-key.pem | cut -d' ' -f1)"
+          test "$developer_key_sha" = "$stable_key_sha"
+          test "$developer_key_sha" = "$EXPECTED_APK_KEY_SHA256"
+
+      - name: Create release from approved artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: gh release create "$RELEASE_TAG" release/**/* --verify-tag --generate-notes

@@ -1,0 +1,23 @@
+/work/
+/out/
+/dl/
+/.cache/
+*.log
+*.tmp
+*.swp
+__pycache__/
+*.pyc
+
+# Device-specific/proprietary material must never enter version control.
+/private-firmware/
+/private-backups/
+*.mbn
+*.bin
+*.img
+*.elf
+*.pem
+*.key
+*.qcn
+*.apk
+
+!board/**/*.json

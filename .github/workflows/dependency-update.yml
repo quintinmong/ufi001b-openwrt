@@ -1,0 +1,44 @@
+name: Dependency update proposal
+
+on:
+  schedule:
+    - cron: '23 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  propose:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Update public dependency locks
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/update-dependencies.py --write | tee dependency-update.txt
+
+      - name: Validate changed locks
+        run: python3 scripts/verify-locks.py
+
+      - name: Open review pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet; then
+            echo 'No dependency update available.'
+            exit 0
+          fi
+          branch="automation/dependencies-${GITHUB_RUN_ID}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$branch"
+          git add locks/sources.lock.json package/mihomo-openclash/Makefile
+          git commit -m 'build: propose pinned dependency updates'
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title 'build: propose pinned dependency updates' \
+            --body-file dependency-update.txt

@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Supplied by OpenWrt base-files on the target.
+# shellcheck disable=SC1091
+. /lib/functions/uci-defaults.sh
+
+[ "$(board_name)" = "handsome,openstick-ufi001b" ] || exit 0
+
+uci -q batch <<'EOF'
+set system.@system[0].hostname='ufi001b'
+set system.@system[0].zonename='Asia/Shanghai'
+set system.@system[0].timezone='CST-8'
+set system.@system[0].zram_size_mb='96'
+set system.@system[0].zram_comp_algo='lzo-rle'
+set network.lan.ipaddr='192.168.1.1'
+set network.lan.ip6assign='0'
+delete network.globals.ula_prefix
+commit system
+commit network
+EOF
+
+cat > /etc/sysctl.d/90-ufi001b-ipv6.conf <<'EOF'
+net.ipv6.conf.all.disable_ipv6=1
+net.ipv6.conf.default.disable_ipv6=1
+EOF
+
+/etc/init.d/ufi001b-usb-gadget enable
+/etc/init.d/ufi001b-resize-rootfs enable
+[ ! -x /etc/init.d/zram ] || /etc/init.d/zram enable
+
+exit 0

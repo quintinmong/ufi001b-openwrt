@@ -1,0 +1,322 @@
+#!/usr/bin/env python3
+"""Validate UFI001B build outputs before they can become artifacts."""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+import re
+import subprocess
+import tempfile
+import zlib
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+LAYOUT = json.loads((ROOT / "board/ufi001b/partition-layout.json").read_text(encoding="utf-8"))
+REFERENCE = json.loads(
+    (ROOT / "board/ufi001b/reference/handsomemod-bootimg.json").read_text(encoding="utf-8")
+)
+GNU_SHA1_BUILD_ID_NOTE = b"\x04\x00\x00\x00\x14\x00\x00\x00\x03\x00\x00\x00GNU\x00"
+
+
+def load_inspector():
+    path = ROOT / "scripts/extract-reference-boot.py"
+    spec = importlib.util.spec_from_file_location("boot_inspector", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.inspect
+
+
+def find_one(directory: Path, pattern: str) -> Path:
+    matches = list(directory.glob(pattern))
+    if len(matches) != 1:
+        raise SystemExit(f"expected one {pattern}, found {len(matches)}")
+    return matches[0]
+
+
+def read_kernel_config(tree: Path) -> str:
+    matches = list(
+        (tree / "build_dir").glob(
+            "target-aarch64_cortex-a53*_musl/linux-msm89xx_msm8916/linux-6.12.*/.config"
+        )
+    )
+    if len(matches) != 1:
+        raise SystemExit(f"expected one built kernel config, found {len(matches)}")
+    return matches[0].read_text(encoding="utf-8")
+
+
+def run_text(command: tuple[str, ...]) -> str:
+    result = subprocess.run(
+        command,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise SystemExit(f"command failed ({result.returncode}): {' '.join(command)}\n{result.stdout}")
+    return result.stdout
+
+
+def validate_boot_build_ids(boot: Path, metadata: dict[str, object]) -> None:
+    """Reject the two known non-deterministic GNU build-id notes in the boot kernel."""
+    image = boot.read_bytes()
+    page_size = int(metadata["page_size"])
+    dtb_offset = int(metadata["appended_dtb_offset_in_kernel"])
+    compressed_kernel = image[page_size : page_size + dtb_offset]
+    try:
+        kernel = zlib.decompress(compressed_kernel, 16 + zlib.MAX_WBITS)
+    except zlib.error as error:
+        raise SystemExit(f"cannot decompress boot kernel: {error}") from error
+    if GNU_SHA1_BUILD_ID_NOTE in kernel:
+        raise SystemExit("boot kernel contains a non-deterministic GNU SHA-1 build-id note")
+
+
+def validate_stable_rootfs(tree: Path, rootfs: Path, partition_bytes: int, manifest: str) -> tuple[int, int]:
+    unsquashfs = tree / "staging_dir/host/bin/unsquashfs4"
+    if not unsquashfs.is_file():
+        raise SystemExit("host unsquashfs4 is missing")
+    with rootfs.open("rb") as handle:
+        if handle.read(4) != b"hsqs":
+            raise SystemExit("stable rootfs does not start with a SquashFS superblock")
+
+    summary = run_text((str(unsquashfs), "-s", str(rootfs)))
+    size_match = re.search(r"^Filesystem size (\d+) bytes", summary, re.MULTILINE)
+    if size_match is None:
+        raise SystemExit("cannot read SquashFS filesystem size")
+    squashfs_bytes = int(size_match.group(1))
+    rootfs_data_offset = (squashfs_bytes + 65535) & ~65535
+    overlay_bytes = partition_bytes - rootfs_data_offset
+    if not squashfs_bytes <= rootfs.stat().st_size <= rootfs_data_offset:
+        raise SystemExit("SquashFS file length is inconsistent with its aligned data boundary")
+    if rootfs_data_offset >= partition_bytes:
+        raise SystemExit("aligned rootfs_data offset falls outside p14")
+    if overlay_bytes < 2 * 1024 * 1024 * 1024:
+        raise SystemExit("stable p14 leaves less than 2 GiB for rootfs_data")
+
+    listing = run_text((str(unsquashfs), "-ll", str(rootfs)))
+    required_paths = (
+        "squashfs-root/etc/init.d/openclash",
+        "squashfs-root/etc/init.d/zram",
+        "squashfs-root/etc/openclash/core/clash_meta",
+        "squashfs-root/etc/uci-defaults/90-ufi001b-system",
+        "squashfs-root/usr/sbin/mkfs.f2fs",
+    )
+    missing_paths = [path for path in required_paths if path not in listing]
+    if missing_paths:
+        raise SystemExit("SquashFS missing:\n- " + "\n- ".join(missing_paths))
+
+    defaults = run_text(
+        (
+            str(unsquashfs),
+            "-cat",
+            str(rootfs),
+            "etc/uci-defaults/90-ufi001b-system",
+        )
+    )
+    for expected in (
+        "zram_size_mb='96'",
+        "zram_comp_algo='lzo-rle'",
+        "/etc/init.d/zram enable",
+    ):
+        if expected not in defaults:
+            raise SystemExit(f"stable UCI defaults missing {expected}")
+
+    with tempfile.TemporaryDirectory(prefix="ufi001b-mihomo-") as temp_dir:
+        mihomo = Path(temp_dir) / "clash_meta"
+        with mihomo.open("wb") as output:
+            result = subprocess.run(
+                (
+                    str(unsquashfs),
+                    "-cat",
+                    str(rootfs),
+                    "etc/openclash/core/clash_meta",
+                ),
+                stdout=output,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+        if result.returncode != 0:
+            raise SystemExit(
+                "cannot extract Mihomo from SquashFS: "
+                + result.stderr.decode("utf-8", errors="replace")
+            )
+        with mihomo.open("rb") as handle:
+            header = handle.read(20)
+        if len(header) < 20 or header[:4] != b"\x7fELF":
+            raise SystemExit("Mihomo core is not ELF")
+        if header[4:6] != b"\x02\x01" or int.from_bytes(header[18:20], "little") != 183:
+            raise SystemExit("Mihomo core is not a 64-bit little-endian AArch64 ELF")
+
+    with tempfile.TemporaryDirectory(prefix="ufi001b-libelf-") as temp_dir:
+        libelf = Path(temp_dir) / "libelf-0.192.so"
+        with libelf.open("wb") as output:
+            result = subprocess.run(
+                (
+                    str(unsquashfs),
+                    "-cat",
+                    str(rootfs),
+                    "usr/lib/libelf-0.192.so",
+                ),
+                stdout=output,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+        if result.returncode != 0:
+            raise SystemExit(
+                "cannot extract libelf from SquashFS: "
+                + result.stderr.decode("utf-8", errors="replace")
+            )
+        if GNU_SHA1_BUILD_ID_NOTE in libelf.read_bytes():
+            raise SystemExit("stable libelf contains a non-deterministic GNU SHA-1 build-id note")
+
+    packages = {line.split(" - ", 1)[0] for line in manifest.splitlines() if " - " in line}
+    required_packages = {
+        "block-mount",
+        "dnsmasq-full",
+        "fstools",
+        "kmod-fs-f2fs",
+        "kmod-nft-socket",
+        "kmod-nft-tproxy",
+        "kmod-tun",
+        "kmod-zram",
+        "luci-app-openclash",
+        "mihomo-openclash",
+        "mkf2fs",
+        "zram-swap",
+    }
+    missing_packages = sorted(required_packages - packages)
+    if missing_packages:
+        raise SystemExit("stable manifest missing:\n- " + "\n- ".join(missing_packages))
+    return rootfs_data_offset, overlay_bytes
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--tree", required=True, type=Path)
+    parser.add_argument("--profile", required=True, choices=("developer-ext4", "stable-squashfs"))
+    parser.add_argument("--allow-private-firmware", action="store_true")
+    args = parser.parse_args()
+
+    bin_dir = args.tree / "bin/targets/msm89xx/msm8916"
+    fs_token = "ext4" if args.profile == "developer-ext4" else "squashfs"
+    boot = find_one(bin_dir, f"*{fs_token}*boot.img")
+    rootfs = find_one(bin_dir, f"*{fs_token}*rootfs.img")
+
+    inspect = load_inspector()
+    boot_meta, dtb = inspect(boot)
+    validate_boot_build_ids(boot, boot_meta)
+    required_dtb_tokens = (
+        b"handsome,openstick-ufi001b\0",
+        b"linux,extcon-usb-gpio\0",
+        b"usb-id-default-state\0",
+        b"gpio110\0",
+    )
+    for token in required_dtb_tokens:
+        if token not in dtb:
+            raise SystemExit(f"boot DTB missing UFI001B token: {token!r}")
+    if b"usb-role-switch\0" in dtb:
+        raise SystemExit("boot DTB retained the incompatible PM8916 USB role switch")
+    expected_addresses = {
+        "kernel_address": "header_kernel_address",
+        "ramdisk_address": "header_ramdisk_address",
+        "second_address": "header_second_address",
+        "tags_address": "header_tags_address",
+    }
+    for actual_key, reference_key in expected_addresses.items():
+        if boot_meta[actual_key] != REFERENCE[reference_key]:
+            raise SystemExit(f"boot {actual_key} differs from reference profile")
+    if boot_meta["page_size"] != REFERENCE["page_size"]:
+        raise SystemExit("boot page size differs from reference profile")
+    if boot_meta["cmdline"] != REFERENCE["cmdline"]:
+        raise SystemExit("boot cmdline differs from approved p14 profile")
+
+    sizes = {p["name"]: p["size_bytes"] for p in LAYOUT["partitions"]}
+    if boot.stat().st_size > sizes["boot"]:
+        raise SystemExit("boot image exceeds p12")
+    if rootfs.stat().st_size > sizes["rootfs"]:
+        raise SystemExit("rootfs image exceeds p14")
+
+    manifest_path = find_one(bin_dir, "*.manifest")
+    manifest = manifest_path.read_text(encoding="utf-8", errors="replace")
+
+    rootfs_data_offset = None
+    overlay_bytes = None
+    if args.profile == "developer-ext4":
+        e2fsck = args.tree / "staging_dir/host/bin/e2fsck"
+        if not e2fsck.is_file():
+            raise SystemExit("host e2fsck is missing")
+        fsck = subprocess.run(
+            (str(e2fsck), "-fn", str(rootfs)),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+        if fsck.returncode != 0:
+            raise SystemExit(f"ext4 consistency check failed:\n{fsck.stdout}")
+    else:
+        rootfs_data_offset, overlay_bytes = validate_stable_rootfs(
+            args.tree, rootfs, sizes["rootfs"], manifest
+        )
+
+    config = read_kernel_config(args.tree)
+    required = (
+        "CONFIG_ARCH_QCOM=y",
+        "CONFIG_MMC_SDHCI_MSM=y",
+        "CONFIG_USB_SUPPORT=y",
+        "CONFIG_EXTCON_USB_GPIO=y",
+        "CONFIG_QRTR=y",
+        "CONFIG_QRTR_SMD=y",
+        "CONFIG_QCOM_BAM_DMUX=m",
+        "CONFIG_QCOM_Q6V5_MSS=m",
+        "CONFIG_QCOM_WCNSS_PIL=m",
+        "CONFIG_WCN36XX=m",
+        "CONFIG_TUN=m",
+        "CONFIG_NFT_TPROXY=m",
+        "CONFIG_NFT_SOCKET=m",
+        "CONFIG_OVERLAY_FS=y",
+    )
+    missing = [symbol for symbol in required if symbol not in config]
+    for symbol in ("CONFIG_USB_CHIPIDEA", "CONFIG_USB_GADGET"):
+        if not any(f"{symbol}={value}" in config for value in ("y", "m")):
+            missing.append(f"{symbol}=(y|m)")
+    if not any(symbol in config for symbol in ("CONFIG_NF_TABLES=y", "CONFIG_NF_TABLES=m")):
+        missing.append("CONFIG_NF_TABLES=(y|m)")
+    if missing:
+        raise SystemExit("kernel config missing:\n- " + "\n- ".join(missing))
+
+    if args.profile == "stable-squashfs":
+        stable_required = (
+            "CONFIG_BLK_DEV_LOOP=y",
+            "CONFIG_F2FS_FS=m",
+            "CONFIG_ZRAM=m",
+            "CONFIG_ZSMALLOC=m",
+        )
+        stable_missing = [symbol for symbol in stable_required if symbol not in config]
+        if stable_missing:
+            raise SystemExit("stable kernel config missing:\n- " + "\n- ".join(stable_missing))
+
+    names = [path.name.lower() for path in bin_dir.iterdir() if path.is_file()]
+    forbidden = re.compile(r"(gpt|partition-table|rawprogram|patch\d.*xml|modemst|fsc|fsg|sbl|aboot)")
+    offenders = [name for name in names if forbidden.search(name)]
+    if offenders:
+        raise SystemExit(f"forbidden artifact names: {offenders}")
+
+    private_names = ("qcom-ufi001b-modem", "qcom-ufi001b-wcnss")
+    if not args.allow_private_firmware:
+        if any(name in manifest for name in private_names):
+            raise SystemExit("private Qualcomm firmware leaked into public build")
+
+    message = f"validated {args.profile}: boot={boot.stat().st_size} rootfs={rootfs.stat().st_size}"
+    if rootfs_data_offset is not None and overlay_bytes is not None:
+        message += f" rootfs_data_offset={rootfs_data_offset} overlay={overlay_bytes}"
+    print(message)
+
+
+if __name__ == "__main__":
+    main()

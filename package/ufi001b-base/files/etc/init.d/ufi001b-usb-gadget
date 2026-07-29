@@ -1,0 +1,28 @@
+#!/bin/sh /etc/rc.common
+
+# rc.common consumes these variables.
+# shellcheck disable=SC2034
+START=12
+STOP=89
+
+board_is_ufi001b() {
+	grep -qx 'handsome,openstick-ufi001b' /proc/device-tree/compatible 2>/dev/null ||
+		tr '\0' '\n' </proc/device-tree/compatible 2>/dev/null |
+		grep -qx 'handsome,openstick-ufi001b'
+}
+
+start() {
+	board_is_ufi001b || return 0
+	[ -d /sys/class/udc ] || return 0
+	[ -n "$(ls -A /sys/class/udc 2>/dev/null)" ] || return 0
+	[ -d /sys/class/net/usb0 ] && return 0
+
+	modprobe g_ether \
+		idVendor=0x1d6b idProduct=0x0104 \
+		iManufacturer=OpenWrt iProduct=UFI001B
+}
+
+stop() {
+	board_is_ufi001b || return 0
+	rmmod g_ether 2>/dev/null || true
+}

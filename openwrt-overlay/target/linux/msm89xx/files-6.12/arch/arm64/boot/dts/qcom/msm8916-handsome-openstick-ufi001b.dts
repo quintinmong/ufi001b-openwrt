@@ -1,0 +1,96 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * UFI001B board delta over msm8916-ufi.dtsi.
+ * GPIO polarity and numbering are taken from the backed-up working UFI001B
+ * DTB, not from the similar UFI001C board.
+ */
+
+/dts-v1/;
+
+#include "msm8916-ufi.dtsi"
+
+/ {
+	model = "Handsome OpenStick UFI001B";
+	compatible = "handsome,openstick-ufi001b", "handsome,openstick", "qcom,msm8916";
+
+	/*
+	 * UFI001B routes the USB ID signal to TLMM GPIO110.  Keep this
+	 * board-specific wiring instead of using the PM8916 VBUS detector:
+	 * the latter does not select peripheral mode on this stick.
+	 */
+	usb_id: usb-id {
+		compatible = "linux,extcon-usb-gpio";
+		id-gpios = <&tlmm 110 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&usb_id_default>;
+	};
+};
+
+&button_restart {
+	gpios = <&tlmm 37 GPIO_ACTIVE_LOW>;
+};
+
+&led_b {
+	gpios = <&tlmm 20 GPIO_ACTIVE_HIGH>;
+	function = LED_FUNCTION_WLAN;
+};
+
+&led_g {
+	gpios = <&tlmm 21 GPIO_ACTIVE_HIGH>;
+	function = LED_FUNCTION_WAN;
+};
+
+&led_r {
+	gpios = <&tlmm 22 GPIO_ACTIVE_HIGH>;
+	function = LED_FUNCTION_POWER;
+};
+
+&mpss {
+	pinctrl-0 = <&sim_ctrl_default>;
+	pinctrl-names = "default";
+};
+
+&usb {
+	/delete-property/ usb-role-switch;
+	extcon = <&usb_id>, <&usb_id>;
+};
+
+&usb_hs_phy {
+	extcon = <&usb_id>;
+};
+
+&button_default {
+	pins = "gpio37";
+	bias-pull-up;
+};
+
+&gpio_leds_default {
+	pins = "gpio20", "gpio21", "gpio22";
+};
+
+/* External SIM setting observed on the working UFI001B device tree. */
+&tlmm {
+	usb_id_default: usb-id-default-state {
+		pins = "gpio110";
+		function = "gpio";
+		drive-strength = <8>;
+		input-enable;
+		bias-pull-up;
+	};
+
+	sim_ctrl_default: sim-ctrl-default-state {
+		sim-en-pins {
+			pins = "gpio1";
+			function = "gpio";
+			bias-disable;
+			output-low;
+		};
+
+		sim-sel-pins {
+			pins = "gpio2";
+			function = "gpio";
+			bias-disable;
+			output-low;
+		};
+	};
+};

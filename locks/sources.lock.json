@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "generated_at": "2026-07-28T00:00:00+08:00",
+  "sources": {
+    "openwrt": {
+      "url": "https://github.com/openwrt/openwrt.git",
+      "version": "v25.12.5",
+      "commit": "f0a60eee2fe051741c643ea6118718aae1ef17fb"
+    },
+    "packages": {
+      "url": "https://github.com/openwrt/packages.git",
+      "branch": "openwrt-25.12",
+      "commit": "5caa62e0bc9f7fb9b0c12a23267bceb7724214dd"
+    },
+    "luci": {
+      "url": "https://github.com/openwrt/luci.git",
+      "branch": "openwrt-25.12",
+      "commit": "128a7812f4be233c5dd7f7466f534fd888785caf"
+    },
+    "routing": {
+      "url": "https://github.com/openwrt-routing/packages.git",
+      "branch": "openwrt-25.12",
+      "commit": "3d7d0dc7fa43d3eb09498417407e95a6552e5312"
+    },
+    "telephony": {
+      "url": "https://github.com/openwrt/telephony.git",
+      "branch": "openwrt-25.12",
+      "commit": "2618106d5846a4a542fdf5809f0d3ed228ce439b"
+    },
+    "video": {
+      "url": "https://github.com/openwrt/video.git",
+      "branch": "openwrt-25.12",
+      "commit": "094bf58da6682f895255a35a84349a79dab4bf95"
+    },
+    "handsomemod_reference": {
+      "url": "https://github.com/HandsomeMod/HandsomeMod.git",
+      "branch": "master",
+      "commit": "fa7f0be51858a64e0d5f9e1f1a3c6bdb137c3eba"
+    },
+    "handsomemod_feed_reference": {
+      "url": "https://github.com/HandsomeMod/handsomefeed.git",
+      "branch": "master",
+      "commit": "0cbb7eec3ab15346e6fddfdbac780c942fa15d4d"
+    },
+    "qcom_firmware_reference": {
+      "url": "https://github.com/HandsomeMod/qcom-firmware.git",
+      "branch": "main",
+      "commit": "fc0ce66ecb7dcc1293c1e29cad2d7f566221efca",
+      "source_sha256": "6a9f773cfa43360d1a261edd37bbde857eb0aeea4bfe9c388be3d760c8b259b9",
+      "redistribution": "private-review-required"
+    },
+    "msm8916_linux_reference": {
+      "url": "https://github.com/msm8916-mainline/linux.git",
+      "branch": "msm8916/6.12",
+      "commit": "fc8cf0132752d1105250d4157ae98ee017c2d2ba"
+    },
+    "mkbootimg": {
+      "url": "https://github.com/osm0sis/mkbootimg.git",
+      "commit": "8dd5b5b5c68bcf8ecdb5859aa7036df276efcc79",
+      "source_sha256": "1d0afab3fe3d2721184f0a99f107f68b3b1a588b8a29b43125632dc3b5872823"
+    },
+    "simg_tools": {
+      "url": "https://github.com/HandsomeMod/simg-tools.git",
+      "commit": "59e39f096eeb453cee78e14bfabfeb088f00b20b",
+      "source_sha256": "2cfcc280ea06570cd1ab3cff1aab6ab6628b25f0560f5bb7e27e982f281a99c1"
+    },
+    "qrtr": {
+      "url": "https://github.com/andersson/qrtr.git",
+      "commit": "9dc7a88548c27983e06465d3fbba2ba27d4bc050",
+      "source_sha256": "ca4ead6d96565d6fb34abdeccfb7731d431c629d93f7bdad480bd032e8ec991c"
+    },
+    "rmtfs": {
+      "url": "https://github.com/andersson/rmtfs.git",
+      "commit": "b08ef6f98ec567876d7d45f15c85c6ed00d7c463",
+      "source_sha256": "8f292e07b90d7fc685d38ce1c94d08f3b3ae1bcac7655df0737d45c5fa02a879"
+    },
+    "rpmsgexport": {
+      "url": "https://github.com/andersson/rpmsgexport.git",
+      "commit": "324d88d668f36c6a5e6a9c2003a050b8a5a3cd60",
+      "source_sha256": "51f97447c2b209a6c527004dd6db4d98c34455d1b1a614699ca2f41b293544d7"
+    },
+    "openclash": {
+      "url": "https://github.com/vernesong/OpenClash.git",
+      "version": "v0.47.133",
+      "commit": "a9e5d98cd664917724dbfb0a31440e512ab45a1b"
+    },
+    "mihomo": {
+      "url": "https://github.com/MetaCubeX/mihomo.git",
+      "version": "v1.19.29",
+      "asset": "mihomo-linux-arm64-v1.19.29.gz",
+      "asset_url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.29/mihomo-linux-arm64-v1.19.29.gz",
+      "asset_size": 16051759,
+      "asset_sha256": "9a868b5e4e0ad91d9d71e1b41b0cfce78aaba44360c30df74a723f8e3926a86c"
+    }
+  }
+}

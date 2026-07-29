@@ -1,0 +1,32 @@
+From: UFI001B OpenWrt maintainers <noreply@example.invalid>
+Subject: [PATCH] arm64: omit non-reproducible boot payload build IDs
+
+The vmlinux and arm64 vDSO GNU build IDs can include link-only input that does
+not survive conversion to the raw Image.  Consequently two otherwise identical
+UFI001B Images differ only in two 20-byte notes.  Disable those two IDs while
+retaining module build IDs and the kernel's Linux notes.  Release identity is
+provided by the complete image SHA-256 and attestation.
+
+diff --git a/Makefile b/Makefile
+--- a/Makefile
++++ b/Makefile
+@@ -1047,6 +1047,6 @@ KBUILD_RUSTFLAGS += $(KRUSTFLAGS)
+ 
+ KBUILD_LDFLAGS_MODULE += --build-id=sha1
+-LDFLAGS_vmlinux += --build-id=sha1
++LDFLAGS_vmlinux += --build-id=none
+ 
+ KBUILD_LDFLAGS	+= -z noexecstack
+ ifeq ($(CONFIG_LD_IS_BFD),y)
+diff --git a/arch/arm64/kernel/vdso/Makefile b/arch/arm64/kernel/vdso/Makefile
+--- a/arch/arm64/kernel/vdso/Makefile
++++ b/arch/arm64/kernel/vdso/Makefile
+@@ -22,7 +22,7 @@
+ # routines, as x86 does (see 6f121e548f83 ("x86, vdso: Reimplement vdso.so
+ # preparation in build-time C")).
+ ldflags-y := -shared -soname=linux-vdso.so.1 \
+-	     -Bsymbolic --build-id=sha1 -n $(btildflags-y)
++	     -Bsymbolic --build-id=none -n $(btildflags-y)
+ 
+ ifdef CONFIG_LD_ORPHAN_WARN
+   ldflags-y += --orphan-handling=$(CONFIG_LD_ORPHAN_WARN_LEVEL)

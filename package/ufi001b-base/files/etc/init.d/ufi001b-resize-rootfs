@@ -1,0 +1,34 @@
+#!/bin/sh /etc/rc.common
+
+# rc.common consumes these variables.
+# shellcheck disable=SC2034
+START=19
+USE_PROCD=1
+
+ROOT_BLOCK=/dev/mmcblk0p14
+STAMP=/etc/ufi001b-rootfs-expanded
+
+board_is_ufi001b() {
+	tr '\0' '\n' </proc/device-tree/compatible 2>/dev/null |
+		grep -qx 'handsome,openstick-ufi001b'
+}
+
+start_service() {
+	board_is_ufi001b || return 0
+	[ -e "$STAMP" ] && return 0
+	[ -b "$ROOT_BLOCK" ] || return 1
+	[ "$(cat /sys/class/block/mmcblk0p14/partition 2>/dev/null)" = 14 ] || return 1
+
+	root_source="$(awk '$2 == "/" { print $1; exit }' /proc/mounts)"
+	root_type="$(awk '$2 == "/" { print $3; exit }' /proc/mounts)"
+	[ "$root_type" = ext4 ] || return 0
+	case "$root_source" in
+	/dev/mmcblk0p14|/dev/root) ;;
+	*) logger -t ufi001b-resize "refusing unexpected root source: $root_source"; return 1 ;;
+	esac
+
+	logger -t ufi001b-resize "expanding ext4 root filesystem inside p14"
+	resize2fs "$ROOT_BLOCK" || return 1
+	touch "$STAMP"
+	sync
+}

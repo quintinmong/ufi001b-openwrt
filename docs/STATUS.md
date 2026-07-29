@@ -1,0 +1,117 @@
+# 实现状态与已知风险
+
+更新日期：2026-07-29。
+
+## 已完成
+
+- 核对 UFI001B 3.61 GiB eMMC、p12/p14 边界和受保护分区；
+- 保存已工作 boot image v0 的完整地址、页尺寸、cmdline 和哈希；
+- 建立 OpenWrt 25.12.5 / Linux 6.12 msm89xx/msm8916 目标骨架；
+- 移入 UFI001B 专用 DTS、Android boot image 构建规则；
+- 建立 ext4 与 SquashFS 配置、p14 ext4 安全扩容服务；
+- 建立 remoteproc/WCN36xx、QRTR/rmtfs/rpmsgexport、OpenClash/Mihomo 包；
+- 建立不可变锁、分区策略、构建校验、SBOM/哈希和 Actions 门禁；
+- 锁、布局、Python、Shell 语法及 OpenWrt `defconfig` 已通过本地检查；
+- QRTR、rmtfs、rpmsgexport 和 mkbootimg 规范源码归档哈希已由 OpenWrt
+  下载/校验逻辑验证；
+- OpenWrt 全部 developer-ext4 构建输入已下载并校验；
+- 非 root WSL 构建环境的 binutils、GCC 14.3、Linux headers 与 musl
+  交叉工具链已从零构建成功；
+- Linux 6.12.94 目标配置已由 OpenWrt `kernel_oldconfig` 刷新并固定为
+  ARM64 小端，移除了 UFI001B 不需要的 KVM/虚拟化配置；
+- Linux 6.12.94 已在全新 target clean 后以非 root WSL 环境完整编译成功；
+- `Image.gz`（6,311,614 bytes）和 UFI001B DTB（49,694 bytes）已生成，
+  DTB 的 model/compatible 已核对为 Handsome OpenStick UFI001B；
+- ChipIdea UDC、WCN36xx、MSM8916 MPSS/WCNSS remoteproc、BAM-DMUX 等
+  关键驱动均已生成预期 `.ko`，QRTR 核心已编入内核。
+- developer-ext4 全量构建成功：boot 6,365,184 bytes，rootfs
+  536,870,912 bytes；Android boot metadata、p12/p14 上限和 `e2fsck -fn`
+  全部通过；
+- stable-squashfs 全量构建及可复现性修正后的受影响目标重建成功：boot
+  6,363,136 bytes，SquashFS rootfs 31,303,378 bytes；
+- 稳定镜像的 SquashFS `bytes_used` 经 64 KiB 对齐后，`rootfs_data`
+  起点为 31,326,208 bytes，p14 精确剩余 3,506,552,320 bytes（约 3.27 GiB）；
+- 已解包验证 OpenClash 0.47.133、Mihomo 1.19.29 AArch64 ELF、F2FS
+  工具、zram 服务和 UFI001B 默认配置；manifest 同时验证 nft TPROXY、
+  TUN、dnsmasq-full、fstools/rootdisk 依赖；
+- stable kernel config 已验证 `F2FS_FS=m`、`ZRAM=m`、`ZSMALLOC=m` 和
+  `BLK_DEV_LOOP=y`；
+- 两个正式输出目录均含 buildinfo、manifest、APK 签名公钥、SPDX 2.3 SBOM
+  和 `SHA256SUMS`；稳定输出另含独立 OpenClash/Mihomo APK；全部哈希复核
+  通过，且白名单确认没有私钥；
+- Actions 的 build/static/update/release 工作流已经实现；第三方 Action 固定
+  到完整 commit。非 PR 构建必须取得 `APK_SIGNING_KEY_PEM`，Release 要求
+  两个 profile 的公钥一致且匹配 `APK_SIGNING_PUBLIC_KEY_SHA256`，并继续要求
+  签名 tag、同 commit 的成功构建、人工环境审批和 artifact 哈希复核；
+- 从零构建暴露的 Rust 1.94/LLVM 内存压力已转成仓库级门禁：稳定构建先
+  生成 bootstrap 配置，再把 Rust 内层并发限制为最多 4。
+- 已按 GitHub Actions 矩阵语义完成两套互不复用 toolchain、`staging_dir`
+  或 `build_dir` 的独立干净构建；两者只复用了经校验的 `dl` 下载缓存：
+  - `developer-ext4`：约 44 分 53 秒，boot 6,365,184 bytes，rootfs
+    536,870,912 bytes，8 项 SHA-256 全部通过，`e2fsck -fn` 通过；
+  - `stable-squashfs`：约 2 小时 44 分 25 秒（`JOBS=3`），boot
+    6,363,136 bytes，rootfs 31,303,466 bytes，10 项 SHA-256 全部通过，
+    内容级校验再次确认 `rootfs_data` 偏移 31,326,208 bytes、overlay 余量
+    3,506,552,320 bytes，以及 OpenClash/Mihomo/F2FS/zram/TPROXY/TUN；
+- 对镜像差异做了逐层定位：boot 的 DTB 完全相同，差异只来自 vmlinux 与
+  arm64 vDSO 的 GNU build-id；rootfs 的额外差异来自浅克隆导致的
+  `base-files` commit count、libelf build-id，以及 APK EC/ECDSA 随机签名。
+  源码准备现会补全 Git 历史（`base-files=1711~f5dae5ece4`），并以仓库补丁
+  关闭 boot/libelf 非确定性 build-id；校验器会直接检查最终镜像内容；
+- 另以全新源码/toolchain/build/staging 根、同一外部 EC 密钥完成一次
+  developer-ext4 全量构建，耗时约 56 分 18 秒：boot 6,365,184 bytes、rootfs
+  536,870,912 bytes，9 项 `SHA256SUMS`、`e2fsck -fn`、boot build-id、公钥
+  一致性和私钥禁入全部通过；公钥 SHA-256 为
+  `d9f66c0bb4bab16a28c2bb7019e0bb4c981775c0f76921e8074db58e25b486f4`；
+- EC/ECDSA 的随机 nonce 意味着 APK 及包含 APK 数据库的 rootfs 不承诺跨构建
+  逐字节相同。当前已证明并自动执行的是锁定输入、固定公钥身份、镜像内容
+  约束，以及对每次实际产物生成哈希、SBOM 和 provenance。
+- 已把上述最新 developer/stable 产物复制到规范的 `out/<profile>`，复制后
+  再次逐项执行 `SHA256SUMS` 并全部通过；四个早期/中间目录完整移动到
+  `out/archive/20260729-before-reprofix/`，未删除。`out/CANDIDATE.md` 明确
+  标记 developer 为唯一第一阶段候选、stable 尚不可刷，并记录候选哈希和
+  p12/p14 安全边界。
+
+## 2026-07-29 首轮 developer HIL
+
+- 用户明确批准后，仅写入 p14 `rootfs` 和 p12 `boot`；两者均完整回读，
+  大小和 SHA-256 与候选产物逐字节一致，ext4 `e2fsck -fn` 通过；
+- 刷写前后主/备 GPT 完全一致；`fsc`、`fsg`、`modemst1`、`modemst2`
+  的刷前/刷后快照逐字节一致；
+- 正常重插并等待超过 3 分钟后，Windows 未枚举 USB gadget、ADB、串口或
+  未知设备，`192.168.1.1`/`192.168.68.1` 均不可达，因此阶段 A 未通过；
+- 与已知可启动 HandsomeMod UFI001B DTB 对比后，发现旧候选错误使用
+  PM8916 VBUS role switch；板级实际连接是 GPIO110 USB-ID extcon。源码现已
+  改回该拓扑并启用 `CONFIG_EXTCON_USB_GPIO=y`，同时加入最终 DTB 自动门禁；
+- 失败候选已完整归档，新修复尚待 GitHub Actions 构建、静态校验和第二轮
+  仅 p12 boot HIL；p14 rootfs 暂不重复写入。
+
+## 当前门禁
+
+- 本地源码、锁、布局、Python、Shell、YAML、危险文件、APK 公钥和两类镜像
+  内容检查已通过；
+- 两个 Actions 矩阵 profile 的原始源码版本已完成本地独立干净构建；远端
+  GitHub-hosted runner 尚未执行；
+- 首轮 developer 已完成安全刷写但未通过启动门禁；GPIO110 USB-ID 修复版
+  尚未生成，stable 继续禁止刷写；
+- 下一阶段只允许构建并验证修复后的 developer boot，再按已批准的 developer
+  HIL 范围只写 p12。
+
+## 尚未完成
+
+- 首轮 developer p12/p14 已刷写并完成回读/保护分区审计，但正常启动未通过；
+- Wi-Fi、modem、USB 和 ext4 首启尚未在修复后的 6.12 镜像上实机验证；
+- stable-squashfs、rootfs_data 与 OpenClash 尚未进行 HIL；
+- 未推送 GitHub、未运行远端 Actions、未创建 Release；
+- 私有 Qualcomm firmware 的本地 HIL 注入和许可证审查未放行。
+
+## 主要技术风险
+
+1. MSM8916 6.12 remoteproc/WCNSS 的编译、kmod 打包与 rootfs 安装已证明，
+   但固件加载、SIM/4G 注册、Wi-Fi AP 和 USB gadget 仍必须实机证明；
+2. 上游 msm8916-mainline defconfig 仍较宽，完成点亮后需裁剪无关显示、
+   音频、摄像头驱动，重新验证 boot 大小与内存；
+3. WCN36xx 使用内核内置 mac80211/cfg80211 与 OpenWrt 用户态组合，需
+   编译和 AP 模式实测；
+4. modem 固件和设备唯一 NV/校准的许可证与注入方式必须保持私有；
+5. 394 MiB RAM 下 OpenClash/Geo 数据/zram 预算需要 24 小时压力测试。

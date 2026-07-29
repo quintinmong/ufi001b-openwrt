@@ -1,0 +1,22 @@
+From: UFI001B OpenWrt maintainers <noreply@example.invalid>
+Subject: [PATCH] elfutils: omit non-reproducible target build-id
+
+The installed libelf payload is otherwise byte-identical across isolated build
+roots, but its GNU build-id also hashes link-only input that does not survive
+target stripping.  Omit that note for the target elfutils libraries; artifact
+hashes and the SPDX manifest remain the release identity.
+
+--- a/package/libs/elfutils/Makefile
++++ b/package/libs/elfutils/Makefile
+@@ -54,6 +54,11 @@ else
+ CONFIGURE_ARGS += --disable-nls
+ endif
+ 
++# Do not let discarded link-only input make the stripped target DSO differ.
++# elfutils otherwise notices the disabled ID and appends a new --build-id.
++TARGET_LDFLAGS += -Wl,--build-id=none
++CONFIGURE_VARS += ac_cv_buildid=yes
++
+ HOST_CONFIGURE_ARGS += \
+ 	--disable-shared \
+ 	--disable-nls \

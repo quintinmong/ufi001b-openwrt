@@ -1,0 +1,18 @@
+#!/bin/sh
+
+[ "$ACTION" = add ] || exit 0
+[ -n "$DEVPATH" ] || exit 0
+
+sys="/sys$DEVPATH"
+name="$(cat "$sys/name" 2>/dev/null)"
+case "$name" in
+DATA5_CNTL) ln -snf "/dev/$DEVNAME" /dev/modem ;;
+DATA4) ln -snf "/dev/$DEVNAME" /dev/modem-at ;;
+esac
+
+case "$DEVNAME" in
+rpmsg_ctrl*)
+	/usr/sbin/rpmsgexport "/dev/$DEVNAME" DATA5_CNTL
+	/usr/sbin/rpmsgexport "/dev/$DEVNAME" DATA4
+	;;
+esac

@@ -1,0 +1,76 @@
+name: Static checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install static-check tools
+        run: sudo apt-get update && sudo apt-get install -y shellcheck device-tree-compiler python3-yaml
+
+      - name: Validate immutable inputs and policy
+        run: |
+          python3 scripts/verify-locks.py
+          python3 scripts/validate-layout.py
+          python3 -m py_compile scripts/*.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import yaml
+
+          for path in Path('.github/workflows').glob('*.yml'):
+              text = path.read_text(encoding='utf-8')
+              yaml.safe_load(text)
+              for line_number, line in enumerate(text.splitlines(), 1):
+                  match = re.search(r'\buses:\s*([^\s#]+)', line)
+                  if match and not re.fullmatch(r'[^@]+@[0-9a-f]{40}', match.group(1)):
+                      raise SystemExit(
+                          f'{path}:{line_number}: Action must use a full commit SHA'
+                      )
+              print(f'valid YAML: {path}')
+          PY
+
+      - name: Check shell scripts
+        run: |
+          shellcheck scripts/build.sh
+          find package -type f \( -path '*/files/etc/init.d/*' -o -path '*/files/etc/board.d/*' -o -path '*/files/etc/uci-defaults/*' -o -path '*/files/etc/hotplug.d/*' \) -print0 |
+            xargs -0 -r shellcheck -s sh
+
+      - name: Parse PowerShell HIL tooling without executing it
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'scripts/flash-developer-hil.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -ne 0) {
+            $errors | Format-List
+            throw 'PowerShell parse failed'
+          }
+
+      - name: Reject firmware and dangerous partition artifacts
+        run: |
+          if find . -path ./work -prune -o -path ./out -prune -o -type f \( -name '*.mbn' -o -name '*.bin' -o -name '*.img' -o -name 'rawprogram*.xml' -o -name 'patch*.xml' \) -print | grep -q .; then
+            echo 'binary firmware or flashing artifact is forbidden in source control' >&2
+            exit 1
+          fi
+          if find . -path ./.git -prune -o -path ./work -prune -o -path ./out -prune -o \
+              -type f ! -name '*.md' -exec grep -I -l -E 'BEGIN ([A-Z0-9]+ )?PRIVATE KEY' {} + |
+              grep -q .; then
+            echo 'private signing key material is forbidden in source control' >&2
+            exit 1
+          fi

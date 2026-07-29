@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "source": "Observed from the backed-up UFI001B device on 2026-07-28",
+  "logical_sector_bytes": 512,
+  "emmc_size_bytes": 3875536896,
+  "partitions": [
+    { "number": 1, "name": "cdt", "first_lba": 131072, "last_lba": 131075, "size_bytes": 2048, "policy": "protected" },
+    { "number": 2, "name": "sbl1", "first_lba": 262144, "last_lba": 263167, "size_bytes": 524288, "policy": "protected" },
+    { "number": 3, "name": "rpm", "first_lba": 263168, "last_lba": 264191, "size_bytes": 524288, "policy": "protected" },
+    { "number": 4, "name": "tz", "first_lba": 264192, "last_lba": 266239, "size_bytes": 1048576, "policy": "protected" },
+    { "number": 5, "name": "hyp", "first_lba": 266240, "last_lba": 267263, "size_bytes": 524288, "policy": "protected" },
+    { "number": 6, "name": "sec", "first_lba": 267264, "last_lba": 267295, "size_bytes": 16384, "policy": "protected" },
+    { "number": 7, "name": "modemst1", "first_lba": 267296, "last_lba": 271391, "size_bytes": 2097152, "policy": "device-unique-never-write" },
+    { "number": 8, "name": "modemst2", "first_lba": 271392, "last_lba": 275487, "size_bytes": 2097152, "policy": "device-unique-never-write" },
+    { "number": 9, "name": "fsc", "first_lba": 275488, "last_lba": 275489, "size_bytes": 1024, "policy": "device-unique-never-write" },
+    { "number": 10, "name": "fsg", "first_lba": 393216, "last_lba": 397311, "size_bytes": 2097152, "policy": "device-unique-never-write" },
+    { "number": 11, "name": "aboot", "first_lba": 524288, "last_lba": 526335, "size_bytes": 1048576, "policy": "protected" },
+    { "number": 12, "name": "boot", "first_lba": 526336, "last_lba": 657407, "size_bytes": 67108864, "policy": "build-output-manual-write" },
+    { "number": 13, "name": "devinfo", "first_lba": 657408, "last_lba": 659455, "size_bytes": 1048576, "policy": "protected" },
+    { "number": 14, "name": "rootfs", "first_lba": 659456, "last_lba": 7569374, "size_bytes": 3537878528, "policy": "build-output-manual-write" }
+  ],
+  "allowed_build_targets": ["boot", "rootfs"],
+  "gpt_mutation_allowed": false
+}
