@@ -63,9 +63,10 @@
   536,870,912 bytes，9 项 `SHA256SUMS`、`e2fsck -fn`、boot build-id、公钥
   一致性和私钥禁入全部通过；公钥 SHA-256 为
   `d9f66c0bb4bab16a28c2bb7019e0bb4c981775c0f76921e8074db58e25b486f4`；
+  这是历史构建身份，相关私钥现已撤销并删除；
 - EC/ECDSA 的随机 nonce 意味着 APK 及包含 APK 数据库的 rootfs 不承诺跨构建
   逐字节相同。当前已证明并自动执行的是锁定输入、固定公钥身份、镜像内容
-  约束，以及对每次实际产物生成哈希、SBOM 和 provenance。
+  约束，以及对每次实际产物生成哈希和 SBOM；公开仓库额外生成 provenance。
 - 已把上述最新 developer/stable 产物复制到规范的 `out/<profile>`，复制后
   再次逐项执行 `SHA256SUMS` 并全部通过；四个早期/中间目录完整移动到
   `out/archive/20260729-before-reprofix/`，未删除。`out/CANDIDATE.md` 明确
@@ -83,17 +84,33 @@
 - 与已知可启动 HandsomeMod UFI001B DTB 对比后，发现旧候选错误使用
   PM8916 VBUS role switch；板级实际连接是 GPIO110 USB-ID extcon。源码现已
   改回该拓扑并启用 `CONFIG_EXTCON_USB_GPIO=y`，同时加入最终 DTB 自动门禁；
-- 失败候选已完整归档，新修复尚待 GitHub Actions 构建、静态校验和第二轮
-  仅 p12 boot HIL；p14 rootfs 暂不重复写入。
+- 失败候选已完整归档。GPIO110 修复版已由私有 GitHub Actions 干净构建，
+  artifact 内全部哈希、公钥、boot metadata、DTB token 和 ext4 `e2fsck -fn`
+  已在本地复核；尚待第二轮仅 p12 boot HIL，p14 rootfs 暂不重复写入。
+
+## 2026-07-30 私有 Actions 修复候选
+
+- 私有仓库 `quintinmong/ufi001b-openwrt` 已创建并推送；Static checks 通过；
+- developer 构建、签名指纹复核和 artifact 上传成功。boot SHA-256 为
+  `a1265330c1f8ad892dcd830b0f68689f255d3c3884bb2fc275dbf3581188507e`，
+  rootfs SHA-256 为
+  `8874bde7229c5076fe5c00fa27fdaf57a32abec4629e0bb7139781db33687b54`；
+- 活动 APK 公钥 SHA-256 为
+  `cdca512810c06a6136ca81998d9d2ce1416b72d30fec67dee81fbb34c9447ecb`；
+  两把可能暴露的旧私钥已删除，不再作为可信签名身份；
+- GitHub 对用户所有的私有仓库不提供 artifact attestation，导致该次 job
+  仅在最终 provenance 步骤失败；固件和 artifact 已成功。工作流现仅在
+  公开仓库运行 attestation，私有仓库继续强制 SHA-256、SBOM、buildinfo 和
+  固定 APK 公钥指纹。
 
 ## 当前门禁
 
 - 本地源码、锁、布局、Python、Shell、YAML、危险文件、APK 公钥和两类镜像
   内容检查已通过；
-- 两个 Actions 矩阵 profile 的原始源码版本已完成本地独立干净构建；远端
-  GitHub-hosted runner 尚未执行；
+- 两个 profile 的原始源码版本已完成本地独立干净构建；远端 GitHub-hosted
+  runner 已完成 GPIO110 修复版 developer 构建和 artifact 上传；
 - 首轮 developer 已完成安全刷写但未通过启动门禁；GPIO110 USB-ID 修复版
-  尚未生成，stable 继续禁止刷写；
+  已生成并离线验证，stable 继续禁止刷写；
 - 下一阶段只允许构建并验证修复后的 developer boot，再按已批准的 developer
   HIL 范围只写 p12。
 
@@ -102,7 +119,7 @@
 - 首轮 developer p12/p14 已刷写并完成回读/保护分区审计，但正常启动未通过；
 - Wi-Fi、modem、USB 和 ext4 首启尚未在修复后的 6.12 镜像上实机验证；
 - stable-squashfs、rootfs_data 与 OpenClash 尚未进行 HIL；
-- 未推送 GitHub、未运行远端 Actions、未创建 Release；
+- 私有 GitHub 仓库与远端 Actions 已建立；未创建 Release；
 - 私有 Qualcomm firmware 的本地 HIL 注入和许可证审查未放行。
 
 ## 主要技术风险

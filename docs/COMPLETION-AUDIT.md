@@ -29,8 +29,8 @@ arm64 vDSO 及 stable libelf 的非确定性 GNU build-id 被关闭并加入最�
 检查。另在第三个全新构建根，以 stable 使用的同一外部 EC 密钥完成约 56 分
 18 秒的 developer 全量构建；9 项哈希、ext4、公钥一致性和私钥禁入均通过。
 EC/ECDSA 签名 nonce 具有随机性，因此这里不宣称 APK/rootfs 跨构建逐字节
-相同；Release 身份由固定公钥指纹锁定，每次实际产物由 SHA-256、SBOM 和
-provenance 唯一描述。
+相同；Release 身份由固定公钥指纹锁定，每次实际产物由 SHA-256 和 SBOM
+描述；公开仓库额外生成 provenance，用户所有的私有仓库受 GitHub 平台限制。
 
 本地交付目录也已收敛：最新候选位于 `out/developer-ext4` 与
 `out/stable-squashfs`，复制到 Windows 文件系统后分别重新验证 9/11 项
@@ -47,7 +47,8 @@ provenance 唯一描述。
 | stable | SquashFS rootfs | `cf039facb9edfacd9c1f49a867fe823cd8c42ffac40bf21a8253608a2393d774` |
 | stable | OpenClash APK | `821a7e323b6ab183fadb5682e103bdb36f5743ab312e8a6d19c28de4c5081786` |
 | stable | Mihomo APK | `d3d51ccd8c882457418b73e61ed51cf0c9acda48cf6f66f2d630bfba24c1894a` |
-| both | APK signing public key | `d9f66c0bb4bab16a28c2bb7019e0bb4c981775c0f76921e8074db58e25b486f4` |
+| both（历史，已撤销） | APK signing public key | `d9f66c0bb4bab16a28c2bb7019e0bb4c981775c0f76921e8074db58e25b486f4` |
+| current developer Actions | APK signing public key | `cdca512810c06a6136ca81998d9d2ce1416b72d30fec67dee81fbb34c9447ecb` |
 
 ## 尚不能由离线构建证明
 

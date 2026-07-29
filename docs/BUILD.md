@@ -90,7 +90,8 @@ host configure，再把 bootstrap 内层并发限制为 `min(JOBS, 4)`；这是�
 
 - `static.yml`：锁、分区策略、Python、Shell、workflow YAML 和禁入二进制检查；
 - `build.yml`：main push 只构建 developer，手动运行可选择 developer 或
-  stable，PR 才运行双 profile 矩阵；artifact 保留 3 天并生成 GitHub 构建证明；
+  stable，PR 才运行双 profile 矩阵；artifact 保留 3 天。GitHub 只对公开的
+  用户仓库开放 artifact attestation，因此私有仓库跳过该步；
 - `dependency-update.yml`：每周只提交版本锁更新 PR，不直接发布；
 - `release.yml`：只接受人工 `workflow_dispatch`，要求签名 tag、同一 commit
   的成功 Build firmware run、artifact profile/哈希复核、布尔确认和受保护
@@ -117,6 +118,7 @@ libelf 中已关闭非确定性 GNU build-id，并由镜像内容校验门禁验
 
 APK 使用 EC/ECDSA 签名；当前工具链签名 nonce 具有随机性，所以即使源码、
 公钥与内容相同，APK 及包含 APK 数据库的 rootfs 也不承诺逐字节相同。发布
-保证是“锁定输入 + 固定公钥指纹 + 每次构建的 SHA-256/SBOM/provenance”，
-不是预先承诺某个整镜像哈希。每个 Release 必须保存 buildinfo、manifest、
-公钥、SBOM、哈希与证明，不能仅以版本字符串判断两个镜像相同。
+保证是“锁定输入 + 固定公钥指纹 + 每次构建的 SHA-256/SBOM”，不是预先
+承诺某个整镜像哈希。公开仓库额外生成 GitHub provenance；用户所有的私有
+仓库受 GitHub 平台限制无法保存 attestation。每个 Release 必须保存
+buildinfo、manifest、公钥、SBOM 和哈希，不能仅以版本字符串判断两个镜像相同。

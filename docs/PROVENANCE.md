@@ -50,7 +50,8 @@ Release 说明中同时公布旧、新公钥指纹和生效版本。
 
 EC/ECDSA 签名含随机 nonce。因此本工程不把 APK 或整 rootfs 的逐字节相同
 作为供应链承诺；承诺的是固定源码、固定公钥身份，以及对每次实际产物生成
-并证明其 SHA-256、manifest、SBOM 和 provenance。
+SHA-256、manifest 和 SBOM。GitHub provenance 仅在平台支持的公开仓库生成；
+用户所有的私有仓库会跳过 attestation，而不是把其失败误判为固件失败。
 
 ## 更新原则
 
