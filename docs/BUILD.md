@@ -78,7 +78,8 @@ host configure，再把 bootstrap 内层并发限制为 `min(JOBS, 4)`；这是�
 ## Actions
 
 - `static.yml`：锁、分区策略、Python、Shell、workflow YAML 和禁入二进制检查；
-- `build.yml`：developer/stable 矩阵构建、短期 artifact、GitHub 构建证明；
+- `build.yml`：main push 只构建 developer，手动运行可选择 developer 或
+  stable，PR 才运行双 profile 矩阵；artifact 保留 3 天并生成 GitHub 构建证明；
 - `dependency-update.yml`：每周只提交版本锁更新 PR，不直接发布；
 - `release.yml`：只接受人工 `workflow_dispatch`，要求签名 tag、同一 commit
   的成功 Build firmware run、artifact profile/哈希复核、布尔确认和受保护
