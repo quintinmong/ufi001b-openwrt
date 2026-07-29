@@ -103,20 +103,60 @@
   公开仓库运行 attestation，私有仓库继续强制 SHA-256、SBOM、buildinfo 和
   固定 APK 公钥指纹。
 
+## 2026-07-30 第二轮 developer boot HIL
+
+- 当前设备通过 `emmcdl` 读取的 GPT 与批准的 14 分区 UFI001B 布局一致；
+- 仅向 p12 `boot` 的 LBA 526336–538767 写入 GPIO110 USB-ID 修复版，
+  共 12,432 个扇区；p14 `rootfs` 未重复写入；
+- 随后完整读取 64 MiB `boot` 分区，前 6,365,184 字节 SHA-256 为
+  `a1265330c1f8ad892dcd830b0f68689f255d3c3884bb2fc275dbf3581188507e`，
+  与 Actions 候选完全一致；
+- 本轮命令未以 GPT、rootfs、基带、NV 或校准分区为写入目标；正常启动、
+  USB gadget 和网络枚举仍待重插验证；
+- 正常重插超过 3 分钟后仍无 USB gadget、RNDIS、未知设备或管理地址响应。
+  离线复核发现设备上的首轮 rootfs 内核 vermagic 为
+  `144c65224430cca527a5de559fa687e2`，修复版 boot 对应 rootfs 的 vermagic 为
+  `f81efc174e450d3050da454e58dd5749`。两者不兼容，旧 rootfs 的 USB/Wi-Fi
+  内核模块无法作为修复版 boot 的有效配套模块；在写入成对 rootfs 前，
+  本轮不能用于判断 GPIO110 修复本身是否有效。
+
+## 2026-07-30 成对 developer rootfs HIL
+
+- 用户另行明确批准后，仅向 p14 `rootfs` 的 LBA 659456 起写入同一次
+  Actions 构建的 512 MiB ext4 镜像；设备报告写入 1,048,576 个扇区完成；
+- 从相同起点回读的数据前 536,870,912 字节 SHA-256 为
+  `8874bde7229c5076fe5c00fa27fdaf57a32abec4629e0bb7139781db33687b54`，
+  与候选完全一致；回读镜像的 `e2fsck -f -n` 五阶段检查退出码为 0；
+- 刷后 GPT 的 p12/p14 起止和容量未变化；`fsc`、`fsg`、`modemst1`、
+  `modemst2` 与首轮刷后全分区快照及原始设备专属备份有效前缀均一致；
+- p12 boot 与 p14 rootfs 现为同一次 Actions 构建、相同 vermagic 的有效配对；
+  正常重插超过 3 分钟后，设备退出 9008，但 Windows 未观察到原 USB 端口
+  的任何设备枚举，`192.168.1.1`/`192.168.68.1` 均不可达。阶段 A 仍未通过；
+- 当前已排除 p12/p14 写入不一致、GPT 改动、ext4 元数据损坏和内核模块
+  vermagic 不匹配。重新进入 9008 只读 p14 超级块后，block count 仍为
+  131072、mount count 为 0、last mount time 为 `never`，证明 rootfs 从未挂载；
+- 最终 developer 内核的解压内容包含 `sdhci_msm`，但不包含工作参考内核中
+  存在的 `mmcblk` 字符串；目标配置也确实缺少 `CONFIG_MMC_BLOCK=y`。因此
+  控制器驱动存在，但内核不能创建 `/dev/mmcblk0p14`，会在 cmdline 的
+  `rootwait` 永久等待。这与全部 HIL 现象一致；
+- 源配置现已明确加入 `CONFIG_BLOCK=y`、`CONFIG_EFI_PARTITION=y` 和
+  `CONFIG_MMC_BLOCK=y`；构建校验及静态工作流新增完整 root-mount 内建链
+  门禁，避免再次产出无 mmc block 根设备的镜像。
+
 ## 当前门禁
 
 - 本地源码、锁、布局、Python、Shell、YAML、危险文件、APK 公钥和两类镜像
   内容检查已通过；
 - 两个 profile 的原始源码版本已完成本地独立干净构建；远端 GitHub-hosted
   runner 已完成 GPIO110 修复版 developer 构建和 artifact 上传；
-- 首轮 developer 已完成安全刷写但未通过启动门禁；GPIO110 USB-ID 修复版
-  已生成并离线验证，stable 继续禁止刷写；
-- 下一阶段只允许构建并验证修复后的 developer boot，再按已批准的 developer
-  HIL 范围只写 p12。
+- 首轮和 GPIO110 修复版 HIL 已完成安全写入与回读，但因缺少内建
+  `MMC_BLOCK` 未通过根挂载门禁；stable 继续禁止刷写；
+- 下一阶段由 GitHub Actions 重建 developer，必须先证明最终解压内核含
+  `mmcblk` 且最终 kernel config 含完整 root-mount 链，再申请下一轮 HIL。
 
 ## 尚未完成
 
-- 首轮 developer p12/p14 已刷写并完成回读/保护分区审计，但正常启动未通过；
+- `MMC_BLOCK` 修复版 developer 尚待 Actions 构建和离线验证；
 - Wi-Fi、modem、USB 和 ext4 首启尚未在修复后的 6.12 镜像上实机验证；
 - stable-squashfs、rootfs_data 与 OpenClash 尚未进行 HIL；
 - 私有 GitHub 仓库与远端 Actions 已建立；未创建 Release；

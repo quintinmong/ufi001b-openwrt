@@ -18,6 +18,28 @@
 重插超过 3 分钟无 USB 枚举或网络，阶段 A 停止。已定位并修正 GPIO110
 USB-ID extcon，等待新 developer boot 进行第二轮 HIL。
 
+第二轮写入结果（2026-07-30）：只写 p12 `boot`，写入范围为 LBA
+526336–538767；完整读取 64 MiB p12 后，候选长度内 SHA-256 为
+`a1265330c1f8ad892dcd830b0f68689f255d3c3884bb2fc275dbf3581188507e`，
+与 Actions 候选一致。p14 及受保护分区未作为写入目标；等待正常重插后的
+启动、USB gadget 和网络验证。正常重插超过 3 分钟仍无枚举或网络；随后
+确认旧 p14 rootfs 的内核 vermagic `144c65224430cca527a5de559fa687e2`
+与新 boot 配套 rootfs 的 `f81efc174e450d3050da454e58dd5749` 不同。
+因此本次“新 boot + 旧 rootfs”不是有效配对，阶段 A 结论保持未定，等待
+获得明确批准后写入同一 Actions 构建的 developer rootfs。
+
+成对写入结果（2026-07-30）：用户另行批准后仅写 p14 `rootfs`，设备报告
+从 LBA 659456 写入 1,048,576 个扇区完成。相同起点的回读数据前 512 MiB
+SHA-256 为 `8874bde7229c5076fe5c00fa27fdaf57a32abec4629e0bb7139781db33687b54`；
+`e2fsck -f -n` 退出码为 0。刷后 GPT 不变，四个受保护分区与首轮全分区
+快照及原始专属备份有效前缀一致。当前 p12/p14 已是同一 Actions 构建，
+正常重插超过 3 分钟后设备退出 9008，但无 USB 枚举或管理地址响应；阶段 A
+保持失败。通过 EDL 只读 p14 超级块后，block count 仍为 131072、mount
+count 为 0、last mount time 为 `never`，证明 rootfs 从未挂载。最终内核
+包含 `sdhci_msm` 但不含 `mmcblk`，并确认源配置缺少 `CONFIG_MMC_BLOCK=y`；
+内核因而无法创建 `/dev/mmcblk0p14`，在 `rootwait` 等待。源码与构建门禁已
+补齐 block/GPT/MMC block/ext4 根挂载链，等待 Actions 重建后再申请 HIL。
+
 ## 阶段 B：无线和 modem
 
 - [ ] WCNSS remoteproc 启动，WCN36xx 加载；

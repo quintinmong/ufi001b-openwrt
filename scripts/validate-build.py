@@ -267,6 +267,13 @@ def main() -> None:
     config = read_kernel_config(args.tree)
     required = (
         "CONFIG_ARCH_QCOM=y",
+        "CONFIG_BLOCK=y",
+        "CONFIG_DEVTMPFS=y",
+        "CONFIG_EFI_PARTITION=y",
+        "CONFIG_EXT4_FS=y",
+        "CONFIG_MMC=y",
+        "CONFIG_MMC_BLOCK=y",
+        "CONFIG_MMC_SDHCI=y",
         "CONFIG_MMC_SDHCI_MSM=y",
         "CONFIG_USB_SUPPORT=y",
         "CONFIG_EXTCON_USB_GPIO=y",
