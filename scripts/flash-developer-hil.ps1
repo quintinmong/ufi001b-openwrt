@@ -15,9 +15,7 @@ $deviceRoot = Join-Path $workspaceRoot 'UFI001B_410wifi'
 $candidateRunRoot = Join-Path $repoRoot 'out\actions\30503595724-retry1'
 $candidateRoot = Join-Path $candidateRunRoot 'ufi001b-developer-ext4'
 $candidateMetadata = Join-Path $candidateRunRoot 'run-metadata.json'
-$pythonExe = Join-Path $deviceRoot 'tools\pyembed\python.exe'
-$edlRoot = Join-Path $deviceRoot 'tools\edl-master'
-$edlEntry = Join-Path $edlRoot 'edl.py'
+$emmcdl = Join-Path $workspaceRoot 'tools\emmcdl\Qualcomm Premium Tool V2.4\emmcdl.exe'
 $loader = Join-Path $deviceRoot 'tools\prog_emmc_firehose_8916.mbn'
 $backup = Join-Path $deviceRoot 'backup_manual\backup_manual.bin'
 $protectedBackupRoot = Join-Path $deviceRoot 'backup_efs'
@@ -50,6 +48,7 @@ $expected = [ordered]@{
     HeadSha = '2D388CF815F80313A5E7B5963A073A9BBE661D38'
     ArtifactId = 8746656447L
     ArtifactName = 'ufi001b-developer-ext4'
+    EmmcdlSha256 = '24540D815142A3D63C4BF4A01FD4DB0C0AEFB26794749D65480CE0A9F2BC83BB'
     LoaderSha256 = '959439AA5864685999B713C3ED12AD5FA408149648B670A9A9EF77BCC9DCAB14'
     BackupBytes = 3875520000L
     BackupSha256 = 'C7380138BFE9E4E509F90A900F6F7B580FFCFE52C2A577A8F12B8A4D7F2CA965'
@@ -71,6 +70,30 @@ $protectedHashes = [ordered]@{
     fsg = '5CEAAEB08434511BDAD19CA570D1AD9A85BE5051E3ECFE5E46A362685B14B45A'
     modemst1 = '35DDA854DEBBAAABA314649E89ECFF0C49764644AD17A5ADC3CCEEC46301548F'
     modemst2 = '651B0D3BAFBCD1AF54643D50B407D78523171E1B8C83D448CC7BA3676BA700EF'
+}
+
+$protectedGeometry = [ordered]@{
+    fsc = [pscustomobject]@{ FirstLba = 275488L; Sectors = 2L }
+    fsg = [pscustomobject]@{ FirstLba = 393216L; Sectors = 4096L }
+    modemst1 = [pscustomobject]@{ FirstLba = 267296L; Sectors = 4096L }
+    modemst2 = [pscustomobject]@{ FirstLba = 271392L; Sectors = 4096L }
+}
+
+$expectedCurrentGpt = [ordered]@{
+    cdt = [pscustomobject]@{ FirstLba = 131072L; Sectors = 4L }
+    sbl1 = [pscustomobject]@{ FirstLba = 262144L; Sectors = 1024L }
+    rpm = [pscustomobject]@{ FirstLba = 263168L; Sectors = 1024L }
+    tz = [pscustomobject]@{ FirstLba = 264192L; Sectors = 2048L }
+    hyp = [pscustomobject]@{ FirstLba = 266240L; Sectors = 1024L }
+    sec = [pscustomobject]@{ FirstLba = 267264L; Sectors = 32L }
+    modemst1 = $protectedGeometry.modemst1
+    modemst2 = $protectedGeometry.modemst2
+    fsc = $protectedGeometry.fsc
+    fsg = $protectedGeometry.fsg
+    aboot = [pscustomobject]@{ FirstLba = 524288L; Sectors = 2048L }
+    boot = [pscustomobject]@{ FirstLba = 526336L; Sectors = 131072L }
+    devinfo = [pscustomobject]@{ FirstLba = 657408L; Sectors = 2048L }
+    rootfs = [pscustomobject]@{ FirstLba = 659456L; Sectors = 6909919L }
 }
 
 function Assert-File {
@@ -160,38 +183,22 @@ function Get-QdloaderPort {
     return $Matches[1]
 }
 
-function Invoke-Edl {
+function Invoke-Emmcdl {
     param(
         [Parameter(Mandatory)] [string[]]$Arguments,
         [Parameter(Mandatory)] [string]$LogPath,
         [Parameter(Mandatory)] [int]$TimeoutSeconds
     )
 
-    $runner = @'
-import json
-import os
-import runpy
-import sys
-
-root = os.environ["UFI001B_EDL_ROOT"]
-entry = os.environ["UFI001B_EDL_ENTRY"]
-sys.path.insert(0, root)
-sys.argv = json.loads(os.environ["UFI001B_EDL_ARGUMENTS"])
-runpy.run_path(entry, run_name="__main__")
-'@
-
     $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
-    $startInfo.FileName = $pythonExe
+    $startInfo.FileName = $emmcdl
     $startInfo.UseShellExecute = $false
     $startInfo.CreateNoWindow = $true
     $startInfo.RedirectStandardOutput = $true
     $startInfo.RedirectStandardError = $true
-    $startInfo.ArgumentList.Add('-u')
-    $startInfo.ArgumentList.Add('-c')
-    $startInfo.ArgumentList.Add($runner)
-    $startInfo.Environment['UFI001B_EDL_ROOT'] = $edlRoot
-    $startInfo.Environment['UFI001B_EDL_ENTRY'] = $edlEntry
-    $startInfo.Environment['UFI001B_EDL_ARGUMENTS'] = ConvertTo-Json -Compress -InputObject (@('edl.py') + $Arguments)
+    foreach ($argument in $Arguments) {
+        $startInfo.ArgumentList.Add($argument)
+    }
 
     $process = [System.Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
@@ -212,10 +219,10 @@ runpy.run_path(entry, run_name="__main__")
         Write-Host $text
     }
     if ($timedOut) {
-        throw "EDL command timed out after $TimeoutSeconds seconds. Re-enter clean 9008 mode. Log: $LogPath"
+        throw "emmcdl command timed out after $TimeoutSeconds seconds. Re-enter clean 9008 mode. Log: $LogPath"
     }
     if ($process.ExitCode -ne 0 -or $text -match '(?im)^Traceback \(most recent call last\):') {
-        throw "EDL command failed with exit code $($process.ExitCode). Log: $LogPath"
+        throw "emmcdl command failed with exit code $($process.ExitCode). Log: $LogPath"
     }
     return $text
 }
@@ -226,23 +233,19 @@ function Assert-CurrentGpt {
         [Parameter(Mandatory)] [string]$Stamp
     )
     $log = Join-Path $logDir "edl-gpt-$Stamp.log"
-    $text = Invoke-Edl -Arguments @(
-        'printgpt', '--memory=emmc', "--loader=$loader", "--portname=$Port", '--serial'
+    $text = Invoke-Emmcdl -Arguments @(
+        '-p', $Port, '-f', $loader, '-MaxPayloadSizeToTargetInBytes', '16384', '-gpt'
     ) -LogPath $log -TimeoutSeconds 120
 
-    $requiredNames = @(
-        'cdt', 'sbl1', 'rpm', 'tz', 'hyp', 'sec', 'modemst1', 'modemst2',
-        'fsc', 'fsg', 'aboot', 'boot', 'devinfo', 'rootfs'
-    )
-    foreach ($name in $requiredNames) {
-        if ($text -notmatch "(?im)^$([regex]::Escape($name)):\s+Offset") {
-            throw "Current GPT is missing expected partition $name. Log: $log"
+    foreach ($name in $expectedCurrentGpt.Keys) {
+        $entry = $expectedCurrentGpt[$name]
+        $pattern = "(?im)^\s*\d+\. Partition Name: $([regex]::Escape($name)) Start LBA: $($entry.FirstLba) Size in LBA: $($entry.Sectors)\s*$"
+        if ($text -notmatch $pattern) {
+            throw "Current GPT entry differs for $name. Log: $log"
         }
     }
-    if ($text -notmatch '(?im)^boot:\s+Offset 0x0*10100000,\s+Length 0x0*4000000,' -or
-        $text -notmatch '(?im)^rootfs:\s+Offset 0x0*14200000,\s+Length 0x0*d2dfbe00,' -or
-        $text -notmatch '(?im)^Total disk size:0x0*e7000000,') {
-        throw "Current eMMC geometry does not match the approved UFI001B layout. Log: $log"
+    if ($text -notmatch '(?im)^Status: 0 The operation completed successfully\.\s*$') {
+        throw "emmcdl did not report a successful GPT read. Log: $log"
     }
     Write-Host "CURRENT GPT CHECK PASSED: $log" -ForegroundColor Green
 }
@@ -265,12 +268,12 @@ function Readback-And-Verify {
     )
     $readback = Join-Path $logDir "$Name-readback-$Stamp.bin"
     $log = Join-Path $logDir "edl-readback-$Name-$Stamp.log"
-    $text = Invoke-Edl -Arguments @(
-        'rs', "$FirstLba", "$($Bytes / 512)", $readback,
-        '--memory=emmc', "--loader=$loader", "--portname=$Port", '--serial'
+    $text = Invoke-Emmcdl -Arguments @(
+        '-p', $Port, '-f', $loader, '-MaxPayloadSizeToTargetInBytes', '16384',
+        '-d', "$FirstLba", "$($Bytes / 512)", '-o', $readback
     ) -LogPath $log -TimeoutSeconds 600
-    if ($text -notmatch '(?im)^Dumped sector ') {
-        throw "EDL did not report a completed $Name readback. Log: $log"
+    if ($text -notmatch '(?im)^Status: 0 The operation completed successfully\.\s*$') {
+        throw "emmcdl did not report a completed $Name readback. Log: $log"
     }
     Assert-File -Path $readback -Bytes $Bytes -Sha256 $Sha256
     Write-Host "$Name READBACK SHA-256 PASSED: $readback" -ForegroundColor Green
@@ -279,11 +282,12 @@ function Readback-And-Verify {
 
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
-foreach ($required in @($pythonExe, $edlEntry, $loader, $backup, $boot, $rootfs)) {
+foreach ($required in @($emmcdl, $loader, $backup, $boot, $rootfs)) {
     if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
         throw "Required file is missing: $required"
     }
 }
+Assert-File -Path $emmcdl -Bytes 177152L -Sha256 $expected.EmmcdlSha256
 Assert-File -Path $loader -Bytes 93288L -Sha256 $expected.LoaderSha256
 Assert-File -Path $backup -Bytes $expected.BackupBytes -Sha256 $expected.BackupSha256
 Assert-CandidateProvenance
@@ -346,11 +350,13 @@ if ($Mode -eq 'AuditProtected') {
     foreach ($name in $protectedHashes.Keys) {
         $path = Join-Path $logDir "$name-pre-hil-$stamp.bin"
         $log = Join-Path $logDir "edl-read-$name-$stamp.log"
-        $text = Invoke-Edl -Arguments @(
-            'r', $name, $path, '--memory=emmc', "--loader=$loader", "--portname=$port", '--serial'
+        $geometry = $protectedGeometry[$name]
+        $text = Invoke-Emmcdl -Arguments @(
+            '-p', $port, '-f', $loader, '-MaxPayloadSizeToTargetInBytes', '16384',
+            '-d', "$($geometry.FirstLba)", "$($geometry.Sectors)", '-o', $path
         ) -LogPath $log -TimeoutSeconds 180
-        if ($text -notmatch '(?im)^Dumped sector ') {
-            throw "EDL did not report a completed $name read. Log: $log"
+        if ($text -notmatch '(?im)^Status: 0 The operation completed successfully\.\s*$') {
+            throw "emmcdl did not report a completed $name read. Log: $log"
         }
         $reference = Join-Path $protectedBackupRoot "$name.bin"
         $bytes = (Get-Item -LiteralPath $reference).Length
@@ -368,11 +374,12 @@ if ($Mode -eq 'FlashRootfs') {
     Assert-WriteConfirmation -ExpectedText 'FLASH-UFI001B-DEVELOPER-ROOTFS'
     $log = Join-Path $logDir "edl-flash-rootfs-$stamp.log"
     Write-Host 'Writing ONLY p14 rootfs. Do not disconnect power.' -ForegroundColor Red
-    $text = Invoke-Edl -Arguments @(
-        'w', 'rootfs', $rootfs, '--memory=emmc', "--loader=$loader", "--portname=$port", '--serial'
+    $text = Invoke-Emmcdl -Arguments @(
+        '-p', $port, '-f', $loader, '-MaxPayloadSizeToTargetInBytes', '16384',
+        '-b', 'rootfs', $rootfs
     ) -LogPath $log -TimeoutSeconds 600
-    if ($text -notmatch '(?im)^Wrote .+ to sector ') {
-        throw "EDL did not report a completed rootfs write. Log: $log"
+    if ($text -notmatch '(?im)^Status: 0 The operation completed successfully\.\s*$') {
+        throw "emmcdl did not report a completed rootfs write. Log: $log"
     }
     $readbackArgs = @{
         Port = $port
@@ -399,11 +406,12 @@ if ($Mode -eq 'FlashRootfs') {
 Assert-WriteConfirmation -ExpectedText 'FLASH-UFI001B-DEVELOPER-BOOT'
 $log = Join-Path $logDir "edl-flash-boot-$stamp.log"
 Write-Host 'Writing ONLY p12 boot. Do not disconnect power.' -ForegroundColor Red
-$text = Invoke-Edl -Arguments @(
-    'w', 'boot', $boot, '--memory=emmc', "--loader=$loader", "--portname=$port", '--serial'
+$text = Invoke-Emmcdl -Arguments @(
+    '-p', $port, '-f', $loader, '-MaxPayloadSizeToTargetInBytes', '16384',
+    '-b', 'boot', $boot
 ) -LogPath $log -TimeoutSeconds 300
-if ($text -notmatch '(?im)^Wrote .+ to sector ') {
-    throw "EDL did not report a completed boot write. Log: $log"
+if ($text -notmatch '(?im)^Status: 0 The operation completed successfully\.\s*$') {
+    throw "emmcdl did not report a completed boot write. Log: $log"
 }
 $readbackArgs = @{
     Port = $port
