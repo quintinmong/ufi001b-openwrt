@@ -41,6 +41,32 @@ jobs:
               exit 1
             }
           done
+          for symbol in \
+            USB_CONFIGFS_ACM \
+            USB_CONFIGFS_ECM \
+            USB_CONFIGFS_ECM_SUBSET \
+            USB_CONFIGFS_EEM \
+            USB_CONFIGFS_F_FS \
+            USB_CONFIGFS_F_HID \
+            USB_CONFIGFS_F_LB_SS \
+            USB_CONFIGFS_F_MIDI \
+            USB_CONFIGFS_F_MIDI2 \
+            USB_CONFIGFS_F_PRINTER \
+            USB_CONFIGFS_F_TCM \
+            USB_CONFIGFS_F_UAC1 \
+            USB_CONFIGFS_F_UAC1_LEGACY \
+            USB_CONFIGFS_F_UAC2 \
+            USB_CONFIGFS_F_UVC \
+            USB_CONFIGFS_MASS_STORAGE \
+            USB_CONFIGFS_NCM \
+            USB_CONFIGFS_OBEX \
+            USB_CONFIGFS_PHONET \
+            USB_CONFIGFS_SERIAL; do
+            grep -qx "# CONFIG_${symbol} is not set" "$config" || {
+              echo "unused configfs function is not explicitly disabled: $symbol" >&2
+              exit 1
+            }
+          done
           gadget=package/ufi001b-base/files/etc/init.d/ufi001b-usb-gadget
           for token in \
             'functions/rndis.usb0' \
