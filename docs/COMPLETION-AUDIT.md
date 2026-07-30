@@ -1,6 +1,6 @@
 # Goal 完成性审计
 
-更新日期：2026-07-29。
+更新日期：2026-07-30。
 
 ## 已由离线证据证明
 
@@ -8,13 +8,13 @@
 | --- | --- | --- |
 | OpenWrt 25.12 / Linux 6.12 | 固定 OpenWrt 25.12.5 commit；产物 buildinfo 与 kernel 6.12.94 | 通过 |
 | MSM8916/UFI001B 目标 | msm89xx/msm8916 target、DTS、Android boot v0、eMMC p12/p14 规则 | 通过 |
-| developer-ext4 | 独立干净构建；boot/rootfs 尺寸、metadata、`e2fsck -fn`、SHA-256 | 通过 |
+| developer-ext4 | 历史 boot/rootfs 的尺寸、metadata、`e2fsck -fn`、SHA-256 通过，但嵌入 IKCONFIG 缺少 `DEVTMPFS/MMC_BLOCK`；修复版正在重建 | 未通过 |
 | stable-squashfs | 独立干净构建；SquashFS 解包、rootfs_data 对齐与约 3.27 GiB overlay | 通过 |
 | OpenClash/Mihomo | 0.47.133 / 1.19.29；独立 APK；AArch64 ELF；manifest 与根文件系统内容 | 通过 |
 | 透明代理依赖 | dnsmasq-full、TUN、nft socket/TPROXY、策略路由相关包/配置 | 离线通过 |
 | F2FS/zram | 内核模块、用户态工具、init/defaults 与 manifest | 离线通过 |
 | 可维护更新 | lock 更新脚本、OpenClash/Mihomo 拆包、静态门禁 | 通过 |
-| Actions | build/static/dependency-update/release YAML；Action commit pin；Release 审批/签名/哈希门禁 | 本地静态通过 |
+| Actions | 修复 commit `2d388cf` 的 Static checks 已通过；developer Build firmware 正在运行 | 进行中 |
 | APK 签名身份 | 外部 EC 私钥输入；artifact 只含公钥；双 profile/仓库 Variable 指纹门禁 | 通过 |
 | 供应链材料 | buildinfo、manifest、APK 公钥、SPDX 2.3 SBOM、SHA256SUMS | 通过 |
 | 安全边界 | 只允许 p12 boot 与 p14 rootfs；禁止 GPT、bootloader、modem/NV/校准进入写入或公开产物 | 通过 |
@@ -32,8 +32,9 @@ EC/ECDSA 签名 nonce 具有随机性，因此这里不宣称 APK/rootfs 跨构�
 相同；Release 身份由固定公钥指纹锁定，每次实际产物由 SHA-256 和 SBOM
 描述；公开仓库额外生成 provenance，用户所有的私有仓库受 GitHub 平台限制。
 
-本地交付目录也已收敛：最新候选位于 `out/developer-ext4` 与
-`out/stable-squashfs`，复制到 Windows 文件系统后分别重新验证 9/11 项
+本地交付目录保留历史产物用于审计：`out/developer-ext4` 已因缺少最终
+root-mount 内核链而撤销，`out/stable-squashfs` 未进入本 Goal。复制到
+Windows 文件系统后曾分别重新验证 9/11 项
 `SHA256SUMS`。早期和中间候选被可恢复地归档到
 `out/archive/20260729-before-reprofix`，避免实机阶段误选旧镜像。
 
@@ -41,8 +42,8 @@ EC/ECDSA 签名 nonce 具有随机性，因此这里不宣称 APK/rootfs 跨构�
 
 | profile | 产物 | SHA-256 |
 | --- | --- | --- |
-| developer | ext4 boot | `b7a23d0930e912b9f6373705e73f72f81344d08cbd35f6a8efe9d4f848025963` |
-| developer | ext4 rootfs | `a217323b2b8c3c3237b9a4caad12dd025126ca3c37000d31e0c13ecb79da2ae0` |
+| developer（历史，已撤销） | ext4 boot | `b7a23d0930e912b9f6373705e73f72f81344d08cbd35f6a8efe9d4f848025963` |
+| developer（历史，已撤销） | ext4 rootfs | `a217323b2b8c3c3237b9a4caad12dd025126ca3c37000d31e0c13ecb79da2ae0` |
 | stable | SquashFS boot | `8788b747eacdbbc5740d9a9e38748afa8745d6279eddbb4e294029d6bdc2742c` |
 | stable | SquashFS rootfs | `cf039facb9edfacd9c1f49a867fe823cd8c42ffac40bf21a8253608a2393d774` |
 | stable | OpenClash APK | `821a7e323b6ab183fadb5682e103bdb36f5743ab312e8a6d19c28de4c5081786` |
@@ -66,7 +67,8 @@ EC/ECDSA 签名 nonce 具有随机性，因此这里不宣称 APK/rootfs 跨构�
 
 ## 当前结论
 
-代码、锁定来源、两类镜像、包内容和本地 Actions 等价构建已经闭环；Goal
-尚未完成，因为完成标准明确包含真实硬件 HIL。任何刷写都必须获得用户对
-本次候选的明确批准，并先从 developer-ext4 开始。不得写 GPT、bootloader、
-baseband、NV、IMEI、modemst、fsc、fsg 或校准分区。
+源码和配置覆盖根因已经修复，但当前修复版 Actions 仍在构建，尚无通过
+嵌入 IKCONFIG 与 ext4 离线门禁的新 artifact；Goal 尚未完成，后续还必须
+完成真实硬件 HIL。任何刷写都必须获得用户对新候选哈希的明确批准，并先从
+developer-ext4 开始。不得写 GPT、bootloader、baseband、NV、IMEI、
+modemst、fsc、fsg 或校准分区。

@@ -10,7 +10,8 @@
 1. PCB 丝印是 `UFI001B`，不是 UFI003/UFI001C；
 2. 已离线保存本机完整 eMMC 备份，并复核大小和 SHA-256；
 3. 9008 端口能稳定识别为 MSM8916，且可以只读扫描分区；
-4. 新产物通过 `SHA256SUMS`、boot metadata、分区大小和 manifest 检查；
+4. 新产物通过 `verify-developer-artifact.py`，包括 `SHA256SUMS`、boot
+   metadata、内嵌 IKCONFIG、分区大小和 ext4 `e2fsck -fn`；
 5. 第一次只使用 `developer-ext4`；
 6. 有串口日志条件时优先接串口；否则至少保留 9008 恢复路径；
 7. 用户再次明确批准本次 p12/p14 写入。
@@ -37,6 +38,11 @@
 MSM8916 loader、3.61 GiB 全盘备份及 p12/p14 精确 LBA/SHA-256 固定为门禁，
 写后按镜像实际长度回读并重新校验 SHA-256。rootfs 还执行只读
 `e2fsck -fn`。脚本不含 GPT、全盘、erase 或其他分区写命令。
+
+已确认缺少 `DEVTMPFS/MMC_BLOCK` 的旧 Actions boot/rootfs 哈希被永久列入
+脚本撤销名单，即使文件仍位于 `out/developer-ext4`，`LocalCheck` 也会在
+打开 USB 前失败。新构建只有先通过离线门禁、更新脚本绑定的精确尺寸/哈希，
+再取得用户针对该构建的明确批准，才能进入设备检查或写入模式。
 
 顺序如下；只有 `LocalCheck` 不打开 USB：
 

@@ -29,6 +29,19 @@ if (@($boot).Count -ne 1 -or @($rootfs).Count -ne 1) {
 $boot = $boot.FullName
 $rootfs = $rootfs.FullName
 
+$revokedCandidateHashes = [ordered]@{
+    'A1265330C1F8AD892DCD830B0F68689F255D3C3884BB2FC275DBF3581188507E' =
+        'boot lacks the final DEVTMPFS/MMC_BLOCK root-mount chain'
+    '8874BDE7229C5076FE5C00FA27FDAF57A32ABEC4629E0BB7139781DB33687B54' =
+        'rootfs belongs to the revoked boot/kernel ABI'
+}
+foreach ($candidate in @($boot, $rootfs)) {
+    $candidateHash = (Get-FileHash -LiteralPath $candidate -Algorithm SHA256).Hash.ToUpperInvariant()
+    if ($revokedCandidateHashes.Contains($candidateHash)) {
+        throw "Revoked HIL candidate $candidateHash ($($revokedCandidateHashes[$candidateHash])). Nothing was opened or written."
+    }
+}
+
 $expected = [ordered]@{
     LoaderSha256 = '959439AA5864685999B713C3ED12AD5FA408149648B670A9A9EF77BCC9DCAB14'
     BackupBytes = 3875520000L
