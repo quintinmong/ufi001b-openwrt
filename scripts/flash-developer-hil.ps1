@@ -12,7 +12,7 @@ Set-StrictMode -Version Latest
 $repoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $workspaceRoot = Split-Path -Parent $repoRoot
 $deviceRoot = Join-Path $workspaceRoot 'UFI001B_410wifi'
-$candidateRunRoot = Join-Path $repoRoot 'out\actions\30525875718-rndis'
+$candidateRunRoot = Join-Path $repoRoot 'out\actions\30541982297-resize-fix'
 $candidateRoot = Join-Path $candidateRunRoot 'ufi001b-developer-ext4'
 $candidateMetadata = Join-Path $candidateRunRoot 'run-metadata.json'
 $emmcdl = Join-Path $workspaceRoot 'tools\emmcdl\Qualcomm Premium Tool V2.4\emmcdl.exe'
@@ -48,9 +48,9 @@ foreach ($candidate in @($boot, $rootfs)) {
 
 $expected = [ordered]@{
     Repository = 'quintinmong/ufi001b-openwrt'
-    RunId = 30525875718L
-    HeadSha = '2883453AAFABFFD8BDCFADD8D87F0054C9B9AC4A'
-    ArtifactId = 8756698528L
+    RunId = 30541982297L
+    HeadSha = 'DD518D11EDC5E0FD05D2780C65D2CEAD788189A2'
+    ArtifactId = 8762389406L
     ArtifactName = 'ufi001b-developer-ext4'
     EmmcdlSha256 = '24540D815142A3D63C4BF4A01FD4DB0C0AEFB26794749D65480CE0A9F2BC83BB'
     LoaderSha256 = '959439AA5864685999B713C3ED12AD5FA408149648B670A9A9EF77BCC9DCAB14'
@@ -66,7 +66,7 @@ $expected = [ordered]@{
     RootfsLastLba = 7569374L
     RootfsBytes = 3537878528L
     RootfsImageBytes = 536870912L
-    RootfsSha256 = '2A3CF2D89D32FC22BDAA56C67F9050DC91BC58B957BE611FCB3629F124355D18'
+    RootfsSha256 = '4B18E55322FA190EB8F8CA8BEC1F8DD2E6C75650DEF6E15A3D56B17AA7AEFA5D'
 }
 
 $protectedHashes = [ordered]@{
