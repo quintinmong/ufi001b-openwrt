@@ -38,7 +38,12 @@ device_identity() {
 wait_for_udc() {
 	tries=0
 	while [ "$tries" -lt 30 ]; do
-		UDC="$(ls /sys/class/udc 2>/dev/null | head -n 1)"
+		UDC=
+		for udc_path in /sys/class/udc/*; do
+			[ -e "$udc_path" ] || continue
+			UDC="${udc_path##*/}"
+			break
+		done
 		[ -z "$UDC" ] || return 0
 		tries=$((tries + 1))
 		sleep 1
