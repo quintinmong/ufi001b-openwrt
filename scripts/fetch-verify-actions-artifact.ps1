@@ -170,8 +170,13 @@ $metadata | ConvertTo-Json | Set-Content -LiteralPath $metadataPath -Encoding ut
 
 $repoWsl = Convert-ToWslPath -Path $repoRoot
 $artifactWsl = Convert-ToWslPath -Path $verificationRoot
+$verifier = switch ($ArtifactName) {
+    'ufi001b-developer-ext4' { 'scripts/verify-developer-artifact.py' }
+    'ufi001b-stable-squashfs' { 'scripts/verify-stable-artifact.py' }
+    default { throw "No offline verifier is defined for artifact $ArtifactName" }
+}
 $command = 'cd ' + (Quote-BashLiteral $repoWsl) +
-    ' && python3 scripts/verify-developer-artifact.py ' + (Quote-BashLiteral $artifactWsl)
+    ' && python3 ' + (Quote-BashLiteral $verifier) + ' ' + (Quote-BashLiteral $artifactWsl)
 & wsl.exe -d $WslDistribution -- bash -lc $command
 if ($LASTEXITCODE -ne 0) {
     throw "Offline artifact verification failed with exit code $LASTEXITCODE"

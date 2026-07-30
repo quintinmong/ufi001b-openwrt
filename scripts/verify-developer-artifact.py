@@ -70,19 +70,9 @@ def verify_hashes(directory: Path) -> int:
     return len(entries)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("artifact_dir", type=Path)
-    parser.add_argument("--e2fsck", default=shutil.which("e2fsck"))
-    parser.add_argument("--debugfs", default=shutil.which("debugfs"))
-    args = parser.parse_args()
-
-    directory = args.artifact_dir.resolve()
-    if not directory.is_dir():
-        raise SystemExit(f"artifact directory does not exist: {directory}")
-    hash_count = verify_hashes(directory)
-    boot = find_one(directory, "*-ext4-boot.img")
-    rootfs = find_one(directory, "*-ext4-rootfs.img")
+def validate_common(directory: Path, fs_token: str) -> tuple[Path, Path, dict[str, object]]:
+    boot = find_one(directory, f"*-{fs_token}-boot.img")
+    rootfs = find_one(directory, f"*-{fs_token}-rootfs.img")
 
     boot_meta, dtb = BOOT_INSPECTOR.inspect(boot)
     recorded_meta_path = directory / "boot-metadata.json"
@@ -120,6 +110,21 @@ def main() -> None:
         raise SystemExit("boot image exceeds p12")
     if rootfs.stat().st_size > sizes["rootfs"]:
         raise SystemExit("rootfs image exceeds p14")
+    return boot, rootfs, boot_meta
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("artifact_dir", type=Path)
+    parser.add_argument("--e2fsck", default=shutil.which("e2fsck"))
+    parser.add_argument("--debugfs", default=shutil.which("debugfs"))
+    args = parser.parse_args()
+
+    directory = args.artifact_dir.resolve()
+    if not directory.is_dir():
+        raise SystemExit(f"artifact directory does not exist: {directory}")
+    hash_count = verify_hashes(directory)
+    boot, rootfs, boot_meta = validate_common(directory, "ext4")
     with rootfs.open("rb") as handle:
         handle.seek(1024 + 56)
         if handle.read(2) != b"\x53\xef":

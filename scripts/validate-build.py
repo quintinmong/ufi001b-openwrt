@@ -179,8 +179,9 @@ def validate_boot_build_ids(boot: Path, metadata: dict[str, object]) -> None:
         raise SystemExit("boot kernel contains a non-deterministic GNU SHA-1 build-id note")
 
 
-def validate_stable_rootfs(tree: Path, rootfs: Path, partition_bytes: int, manifest: str) -> tuple[int, int]:
-    unsquashfs = tree / "staging_dir/host/bin/unsquashfs4"
+def validate_stable_rootfs(
+    unsquashfs: Path, rootfs: Path, partition_bytes: int, manifest: str
+) -> tuple[int, int]:
     if not unsquashfs.is_file():
         raise SystemExit("host unsquashfs4 is missing")
     with rootfs.open("rb") as handle:
@@ -194,8 +195,17 @@ def validate_stable_rootfs(tree: Path, rootfs: Path, partition_bytes: int, manif
     squashfs_bytes = int(size_match.group(1))
     rootfs_data_offset = (squashfs_bytes + 65535) & ~65535
     overlay_bytes = partition_bytes - rootfs_data_offset
-    if not squashfs_bytes <= rootfs.stat().st_size <= rootfs_data_offset:
-        raise SystemExit("SquashFS file length is inconsistent with its aligned data boundary")
+    image_bytes = rootfs.stat().st_size
+    if image_bytes % 512:
+        raise SystemExit("stable rootfs image is not eMMC-sector aligned")
+    if image_bytes < rootfs_data_offset + 4:
+        raise SystemExit("stable rootfs does not initialize the rootfs_data boundary")
+    if image_bytes > rootfs_data_offset + 256 * 1024 + 512:
+        raise SystemExit("stable rootfs padding extends unexpectedly far into rootfs_data")
+    with rootfs.open("rb") as handle:
+        handle.seek(rootfs_data_offset)
+        if handle.read(4) != b"\xde\xad\xc0\xde":
+            raise SystemExit("stable rootfs lacks the fstools deadc0de marker at rootfs_data")
     if rootfs_data_offset >= partition_bytes:
         raise SystemExit("aligned rootfs_data offset falls outside p14")
     if overlay_bytes < 2 * 1024 * 1024 * 1024:
@@ -205,8 +215,10 @@ def validate_stable_rootfs(tree: Path, rootfs: Path, partition_bytes: int, manif
     required_paths = (
         "squashfs-root/etc/init.d/openclash",
         "squashfs-root/etc/init.d/zram",
+        "squashfs-root/etc/modules-boot.d/30-fs-f2fs",
         "squashfs-root/etc/openclash/core/clash_meta",
         "squashfs-root/etc/uci-defaults/90-ufi001b-system",
+        "squashfs-root/sbin/mount_root",
         "squashfs-root/usr/sbin/mkfs.f2fs",
     )
     missing_paths = [path for path in required_paths if path not in listing]
@@ -367,7 +379,10 @@ def main() -> None:
         )
     else:
         rootfs_data_offset, overlay_bytes = validate_stable_rootfs(
-            args.tree, rootfs, sizes["rootfs"], manifest
+            args.tree / "staging_dir/host/bin/unsquashfs4",
+            rootfs,
+            sizes["rootfs"],
+            manifest,
         )
 
     config = read_kernel_config(args.tree)

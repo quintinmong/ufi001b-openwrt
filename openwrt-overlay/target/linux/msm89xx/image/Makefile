@@ -40,6 +40,7 @@ define Device/Default
   IMAGES := boot.img rootfs.img
   IMAGE/boot.img := qcom-bootimg | check-size 65536k
   IMAGE/rootfs.img := append-rootfs | check-size 3454959k
+  IMAGE/rootfs.img/squashfs := append-rootfs | pad-rootfs | pad-to 512 | check-size 3454959k
   IMAGE/rootfs.img/ext4 := append-rootfs | ufi001b-e2fsck | check-size 3454959k
   QCOM_BOOTIMG_BASE := 0x80000000
   QCOM_BOOTIMG_KERNEL_OFFSET := 0x00080000

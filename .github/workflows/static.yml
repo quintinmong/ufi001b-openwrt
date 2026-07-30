@@ -84,6 +84,11 @@ jobs:
             echo 'UFI001B must not install the legacy serial gadget by default' >&2
             exit 1
           fi
+          grep -Fq 'IMAGE/rootfs.img/squashfs := append-rootfs | pad-rootfs | pad-to 512' \
+            openwrt-overlay/target/linux/msm89xx/image/Makefile || {
+              echo 'stable rootfs must invalidate rootfs_data and remain eMMC-sector aligned' >&2
+              exit 1
+            }
           for profile in configs/developer-ext4.config configs/stable-squashfs.config; do
             for symbol in CONFIG_KERNEL_DEVTMPFS=y CONFIG_KERNEL_DEVTMPFS_MOUNT=y; do
               grep -qx "$symbol" "$profile" || {
