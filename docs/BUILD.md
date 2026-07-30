@@ -78,6 +78,17 @@ APK_SIGNING_KEY_FILE=/安全且不在仓库内的路径/ufi001b-apk-private-key.
   `mkfs.f2fs`，并校验对应 manifest 和 F2FS/ZRAM/loop 内核符号；
 - stable 镜像内的 libelf 不得含非确定性 GNU SHA-1 build-id note。
 
+下载 artifact 后使用独立离线门禁（在 Linux/WSL 中运行，以获得只读
+`e2fsck`）：
+
+```sh
+python3 scripts/verify-developer-artifact.py out/developer-ext4
+```
+
+它重新计算 `SHA256SUMS`、boot metadata、p12/p14 尺寸和 ext4 超级块，执行
+`e2fsck -fn`，并从 boot 内核的 IKCONFIG 载荷读取最终配置，验证完整根挂载
+与 USB/网络依赖；不会信任构建树中已经消失的临时 `.config`。
+
 仅在 target `config-6.12` 中写入 `DEVTMPFS` 或 `MMC_BLOCK` 不足以保证最终
 内核仍启用它们：OpenWrt 顶层 `CONFIG_KERNEL_*` 与内核包元数据会在
 `Kernel/Configure` 阶段再次覆盖配置。因此两个 profile 都显式选择

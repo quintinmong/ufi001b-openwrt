@@ -19,6 +19,29 @@ REFERENCE = json.loads(
     (ROOT / "board/ufi001b/reference/handsomemod-bootimg.json").read_text(encoding="utf-8")
 )
 GNU_SHA1_BUILD_ID_NOTE = b"\x04\x00\x00\x00\x14\x00\x00\x00\x03\x00\x00\x00GNU\x00"
+REQUIRED_KERNEL_CONFIG = (
+    "CONFIG_ARCH_QCOM=y",
+    "CONFIG_BLOCK=y",
+    "CONFIG_DEVTMPFS=y",
+    "CONFIG_EFI_PARTITION=y",
+    "CONFIG_EXT4_FS=y",
+    "CONFIG_MMC=y",
+    "CONFIG_MMC_BLOCK=y",
+    "CONFIG_MMC_SDHCI=y",
+    "CONFIG_MMC_SDHCI_MSM=y",
+    "CONFIG_USB_SUPPORT=y",
+    "CONFIG_EXTCON_USB_GPIO=y",
+    "CONFIG_QRTR=y",
+    "CONFIG_QRTR_SMD=y",
+    "CONFIG_QCOM_BAM_DMUX=m",
+    "CONFIG_QCOM_Q6V5_MSS=m",
+    "CONFIG_QCOM_WCNSS_PIL=m",
+    "CONFIG_WCN36XX=m",
+    "CONFIG_TUN=m",
+    "CONFIG_NFT_TPROXY=m",
+    "CONFIG_NFT_SOCKET=m",
+    "CONFIG_OVERLAY_FS=y",
+)
 
 
 def load_inspector():
@@ -60,6 +83,41 @@ def run_text(command: tuple[str, ...]) -> str:
     if result.returncode != 0:
         raise SystemExit(f"command failed ({result.returncode}): {' '.join(command)}\n{result.stdout}")
     return result.stdout
+
+
+def extract_embedded_kernel_config(boot: Path, metadata: dict[str, object]) -> str:
+    """Extract CONFIG_IKCONFIG data from the gzip-compressed boot kernel."""
+    image = boot.read_bytes()
+    page_size = int(metadata["page_size"])
+    dtb_offset = int(metadata["appended_dtb_offset_in_kernel"])
+    compressed_kernel = image[page_size : page_size + dtb_offset]
+    try:
+        kernel = zlib.decompress(compressed_kernel, 16 + zlib.MAX_WBITS)
+    except zlib.error as error:
+        raise SystemExit(f"cannot decompress boot kernel: {error}") from error
+
+    start_marker = b"IKCFG_ST"
+    end_marker = b"IKCFG_ED"
+    start = kernel.find(start_marker)
+    end = kernel.find(end_marker, start + len(start_marker))
+    if start < 0 or end < 0:
+        raise SystemExit("boot kernel does not contain an embedded IKCONFIG payload")
+    payload = kernel[start + len(start_marker) : end]
+    try:
+        config = zlib.decompress(payload, 16 + zlib.MAX_WBITS)
+    except zlib.error as error:
+        raise SystemExit(f"cannot decompress embedded kernel config: {error}") from error
+    return config.decode("utf-8", errors="strict")
+
+
+def missing_kernel_config(config: str) -> list[str]:
+    missing = [symbol for symbol in REQUIRED_KERNEL_CONFIG if symbol not in config]
+    for symbol in ("CONFIG_USB_CHIPIDEA", "CONFIG_USB_GADGET"):
+        if not any(f"{symbol}={value}" in config for value in ("y", "m")):
+            missing.append(f"{symbol}=(y|m)")
+    if not any(symbol in config for symbol in ("CONFIG_NF_TABLES=y", "CONFIG_NF_TABLES=m")):
+        missing.append("CONFIG_NF_TABLES=(y|m)")
+    return missing
 
 
 def validate_boot_build_ids(boot: Path, metadata: dict[str, object]) -> None:
@@ -265,37 +323,13 @@ def main() -> None:
         )
 
     config = read_kernel_config(args.tree)
-    required = (
-        "CONFIG_ARCH_QCOM=y",
-        "CONFIG_BLOCK=y",
-        "CONFIG_DEVTMPFS=y",
-        "CONFIG_EFI_PARTITION=y",
-        "CONFIG_EXT4_FS=y",
-        "CONFIG_MMC=y",
-        "CONFIG_MMC_BLOCK=y",
-        "CONFIG_MMC_SDHCI=y",
-        "CONFIG_MMC_SDHCI_MSM=y",
-        "CONFIG_USB_SUPPORT=y",
-        "CONFIG_EXTCON_USB_GPIO=y",
-        "CONFIG_QRTR=y",
-        "CONFIG_QRTR_SMD=y",
-        "CONFIG_QCOM_BAM_DMUX=m",
-        "CONFIG_QCOM_Q6V5_MSS=m",
-        "CONFIG_QCOM_WCNSS_PIL=m",
-        "CONFIG_WCN36XX=m",
-        "CONFIG_TUN=m",
-        "CONFIG_NFT_TPROXY=m",
-        "CONFIG_NFT_SOCKET=m",
-        "CONFIG_OVERLAY_FS=y",
-    )
-    missing = [symbol for symbol in required if symbol not in config]
-    for symbol in ("CONFIG_USB_CHIPIDEA", "CONFIG_USB_GADGET"):
-        if not any(f"{symbol}={value}" in config for value in ("y", "m")):
-            missing.append(f"{symbol}=(y|m)")
-    if not any(symbol in config for symbol in ("CONFIG_NF_TABLES=y", "CONFIG_NF_TABLES=m")):
-        missing.append("CONFIG_NF_TABLES=(y|m)")
+    missing = missing_kernel_config(config)
     if missing:
-        raise SystemExit("kernel config missing:\n- " + "\n- ".join(missing))
+        raise SystemExit("built kernel config missing:\n- " + "\n- ".join(missing))
+    embedded_config = extract_embedded_kernel_config(boot, boot_meta)
+    embedded_missing = missing_kernel_config(embedded_config)
+    if embedded_missing:
+        raise SystemExit("embedded kernel config missing:\n- " + "\n- ".join(embedded_missing))
 
     if args.profile == "stable-squashfs":
         stable_required = (
@@ -307,6 +341,14 @@ def main() -> None:
         stable_missing = [symbol for symbol in stable_required if symbol not in config]
         if stable_missing:
             raise SystemExit("stable kernel config missing:\n- " + "\n- ".join(stable_missing))
+        embedded_stable_missing = [
+            symbol for symbol in stable_required if symbol not in embedded_config
+        ]
+        if embedded_stable_missing:
+            raise SystemExit(
+                "embedded stable kernel config missing:\n- "
+                + "\n- ".join(embedded_stable_missing)
+            )
 
     names = [path.name.lower() for path in bin_dir.iterdir() if path.is_file()]
     forbidden = re.compile(r"(gpt|partition-table|rawprogram|patch\d.*xml|modemst|fsc|fsg|sbl|aboot)")
