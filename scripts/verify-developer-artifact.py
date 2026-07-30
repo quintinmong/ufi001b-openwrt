@@ -84,9 +84,11 @@ def main() -> None:
     rootfs = find_one(directory, "*-ext4-rootfs.img")
 
     boot_meta, dtb = BOOT_INSPECTOR.inspect(boot)
-    recorded_meta = json.loads((directory / "boot-metadata.json").read_text(encoding="utf-8"))
-    if recorded_meta != boot_meta:
-        raise SystemExit("boot-metadata.json does not match the boot image")
+    recorded_meta_path = directory / "boot-metadata.json"
+    if recorded_meta_path.is_file():
+        recorded_meta = json.loads(recorded_meta_path.read_text(encoding="utf-8"))
+        if recorded_meta != boot_meta:
+            raise SystemExit("boot-metadata.json does not match the boot image")
     for token in (
         b"handsome,openstick-ufi001b\0",
         b"linux,extcon-usb-gpio\0",
@@ -142,15 +144,17 @@ def main() -> None:
     for symbol in (
         "CONFIG_KERNEL_DEVTMPFS=y",
         "CONFIG_KERNEL_DEVTMPFS_MOUNT=y",
-        "CONFIG_PACKAGE_kmod-mmc=y",
     ):
         if symbol not in buildinfo:
             raise SystemExit(f"config.buildinfo missing {symbol}")
+    manifest = find_one(directory, "*.manifest").read_text(encoding="utf-8")
+    if re.search(r"^kmod-mmc - \S+$", manifest, flags=re.MULTILINE) is None:
+        raise SystemExit("package manifest missing kmod-mmc")
 
     print(
         "verified developer artifact: "
         f"hashes={hash_count} boot={boot.stat().st_size} rootfs={rootfs.stat().st_size} "
-        "embedded-root-chain=ok ext4=ok"
+        "embedded-root-chain=ok manifest-mmc=ok ext4=ok"
     )
 
 

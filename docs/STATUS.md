@@ -148,6 +148,16 @@
   启用 `CONFIG_KERNEL_DEVTMPFS`/`CONFIG_KERNEL_DEVTMPFS_MOUNT`，设备包已
   选择 `kmod-mmc`。本地按 Actions 相同的 kconfig 合并流程确认最终
   `DEVTMPFS`、`MMC_BLOCK`、GPT、ext4 和 SDHCI_MSM 均为 `y`。
+- Actions 第 8 次构建 run `30503595724`（commit `2d388cf`）已成功完成并
+  上传 artifact `8746656447`。下载后的 9 项 `SHA256SUMS` 全部通过；boot
+  为 6,379,520 bytes、SHA-256
+  `4fa5bbac35685395fbd7f0fbf04394e0f82af370b157937e37e4fda817ff63be`，
+  rootfs 为 536,870,912 bytes、SHA-256
+  `a1cc51903beff5e5916927572b53f406b26452e9ed1a8be0a6c604373d2107ae`；
+  boot 内嵌 IKCONFIG 的 block、GPT、ext4、devtmpfs、MMC、MMC_BLOCK、
+  SDHCI_MSM 与 USB gadget 根链均通过，manifest 含 `kmod-mmc`，rootfs 的
+  `e2fsck -fn` 退出码为 0。`LocalCheck` 复核 provenance、loader、全盘
+  备份、GPT 和镜像后通过，且未打开 USB。
 
 ## 当前门禁
 
@@ -157,12 +167,12 @@
   runner 已完成 GPIO110 修复版 developer 构建和 artifact 上传；
 - 首轮和 GPIO110 修复版 HIL 已完成安全写入与回读，但因缺少内建
   `MMC_BLOCK` 未通过根挂载门禁；stable 继续禁止刷写；
-- 下一阶段由 GitHub Actions 重建 developer，必须先证明最终解压内核含
-  `mmcblk` 且最终 kernel config 含完整 root-mount 链，再申请下一轮 HIL。
+- 新 developer 候选已完成离线证明；下一阶段必须先取得用户针对上述精确
+  boot/rootfs 哈希的明确批准，再执行只读设备检查和下一轮 HIL。
 
 ## 尚未完成
 
-- `MMC_BLOCK` 修复版 developer 尚待 Actions 构建和离线验证；
+- `MMC_BLOCK` 修复版 developer 尚待用户批准和真实硬件 HIL；
 - Wi-Fi、modem、USB 和 ext4 首启尚未在修复后的 6.12 镜像上实机验证；
 - stable-squashfs、rootfs_data 与 OpenClash 尚未进行 HIL；
 - 私有 GitHub 仓库与远端 Actions 已建立；未创建 Release；

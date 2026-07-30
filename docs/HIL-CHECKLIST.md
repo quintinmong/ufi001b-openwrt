@@ -5,7 +5,7 @@
 
 ## 阶段 A：developer-ext4 最小启动
 
-- [x] 用户核对 UFI001B、私有全盘备份和 p12/p14 产物后批准刷写；
+- [ ] 用户针对当前 run `30503595724` 的精确 p12/p14 哈希批准刷写；
 - [x] Android boot header、DTB compatible 和 cmdline 与预期一致；
 - [ ] 3 分钟内进入系统，无 kernel panic、watchdog loop；
 - [ ] `/` 来自 `/dev/mmcblk0p14` 且为 ext4；
@@ -46,8 +46,17 @@ rootfs，但最终产物校验拒绝上传：实际构建配置仍缺少 `DEVTMP
 内核片段会被顶层 `CONFIG_KERNEL_DEVTMPFS` 和未选择的 `kmod-mmc` 包元数据
 覆盖。现已在两个 profile 启用 devtmpfs 顶层开关，并把 `kmod-mmc` 加入
 UFI001B 设备包；本地以相同合并命令验证最终 config-set 中
-`DEVTMPFS/MMC_BLOCK/GPT/EXT4/SDHCI_MSM` 全部为内建。等待新 Actions 产物，
-此前镜像不得再次刷写。
+`DEVTMPFS/MMC_BLOCK/GPT/EXT4/SDHCI_MSM` 全部为内建。第 6 次构建及此前
+镜像不得再次刷写。
+
+第 8 次构建（run `30503595724`，commit `2d388cf`）成功上传 artifact
+`8746656447`。离线重算 9 项哈希全部通过；boot 6,379,520 bytes，SHA-256
+为 `4fa5bbac35685395fbd7f0fbf04394e0f82af370b157937e37e4fda817ff63be`；
+rootfs 536,870,912 bytes，SHA-256 为
+`a1cc51903beff5e5916927572b53f406b26452e9ed1a8be0a6c604373d2107ae`。
+boot cmdline 为 `/dev/mmcblk0p14 rw rootwait`；内嵌 IKCONFIG、manifest 和
+`e2fsck -fn` 全部通过，刷写脚本 `LocalCheck` 也通过且未打开 USB。等待用户
+针对这对新哈希明确授权；此前对旧候选的授权不适用于本次构建。
 
 ## 阶段 B：无线和 modem
 

@@ -7,7 +7,11 @@ param(
     [ValidatePattern('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')]
     [string]$Repository = 'quintinmong/ufi001b-openwrt',
 
+    [ValidatePattern('^[A-Za-z0-9_.-]+$')]
     [string]$ArtifactName = 'ufi001b-developer-ext4',
+
+    [ValidatePattern('^[A-Za-z0-9_.-]+$')]
+    [string]$DestinationName,
 
     [string]$WslDistribution = 'Ubuntu-24.04'
 )
@@ -15,7 +19,17 @@ param(
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $actionsRoot = Join-Path $repoRoot 'out\actions'
-$runRoot = Join-Path $actionsRoot ([string]$RunId)
+if (-not $DestinationName) {
+    $DestinationName = [string]$RunId
+}
+$actionsRoot = [System.IO.Path]::GetFullPath($actionsRoot)
+$runRoot = [System.IO.Path]::GetFullPath((Join-Path $actionsRoot $DestinationName))
+if (-not $runRoot.StartsWith(
+        $actionsRoot + [System.IO.Path]::DirectorySeparatorChar,
+        [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    throw "Destination escapes the Actions output root: $DestinationName"
+}
 $artifactRoot = Join-Path $runRoot $ArtifactName
 $archivePath = Join-Path $runRoot ($ArtifactName + '.zip')
 $metadataPath = Join-Path $runRoot 'run-metadata.json'
@@ -57,13 +71,52 @@ $headers = @{
     'X-GitHub-Api-Version' = '2022-11-28'
 }
 
+function Invoke-GitHubRest {
+    param([Parameter(Mandatory = $true)][string]$Uri)
+
+    for ($attempt = 1; $attempt -le 5; $attempt++) {
+        try {
+            return Invoke-RestMethod -Uri $Uri -Headers $headers
+        }
+        catch {
+            if ($attempt -eq 5) {
+                throw
+            }
+            Start-Sleep -Seconds (2 * $attempt)
+        }
+    }
+}
+
+function Save-GitHubArtifact {
+    param(
+        [Parameter(Mandatory = $true)][string]$Uri,
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+
+    for ($attempt = 1; $attempt -le 5; $attempt++) {
+        try {
+            Invoke-WebRequest -Uri $Uri -Headers $headers -OutFile $Path
+            if ((Get-Item -LiteralPath $Path).Length -le 0) {
+                throw 'Artifact download produced an empty file'
+            }
+            return
+        }
+        catch {
+            if ($attempt -eq 5) {
+                throw
+            }
+            Start-Sleep -Seconds (3 * $attempt)
+        }
+    }
+}
+
 $apiRoot = "https://api.github.com/repos/$Repository"
-$run = Invoke-RestMethod -Uri "$apiRoot/actions/runs/$RunId" -Headers $headers
+$run = Invoke-GitHubRest -Uri "$apiRoot/actions/runs/$RunId"
 if ($run.status -ne 'completed' -or $run.conclusion -ne 'success') {
     throw "Run $RunId is not a successful completed run: status=$($run.status) conclusion=$($run.conclusion)"
 }
 
-$artifactResponse = Invoke-RestMethod -Uri "$apiRoot/actions/runs/$RunId/artifacts" -Headers $headers
+$artifactResponse = Invoke-GitHubRest -Uri "$apiRoot/actions/runs/$RunId/artifacts"
 $matches = @($artifactResponse.artifacts | Where-Object { $_.name -eq $ArtifactName })
 if ($matches.Count -ne 1) {
     throw "Expected exactly one artifact named $ArtifactName, found $($matches.Count)"
@@ -77,7 +130,7 @@ if ([long]$artifact.workflow_run.id -ne $RunId) {
 }
 
 New-Item -ItemType Directory -Path $artifactRoot -Force | Out-Null
-Invoke-WebRequest -Uri $artifact.archive_download_url -Headers $headers -OutFile $archivePath
+Save-GitHubArtifact -Uri $artifact.archive_download_url -Path $archivePath
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [System.IO.Compression.ZipFile]::OpenRead($archivePath)

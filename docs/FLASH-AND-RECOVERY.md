@@ -44,6 +44,14 @@ MSM8916 loader、3.61 GiB 全盘备份及 p12/p14 精确 LBA/SHA-256 固定为�
 打开 USB 前失败。新构建只有先通过离线门禁、更新脚本绑定的精确尺寸/哈希，
 再取得用户针对该构建的明确批准，才能进入设备检查或写入模式。
 
+当前通过离线门禁的候选固定为 Actions run `30503595724`、commit
+`2d388cf`、artifact `8746656447`：boot SHA-256 为
+`4fa5bbac35685395fbd7f0fbf04394e0f82af370b157937e37e4fda817ff63be`，
+rootfs SHA-256 为
+`a1cc51903beff5e5916927572b53f406b26452e9ed1a8be0a6c604373d2107ae`。
+脚本同时核对 `run-metadata.json` 中的仓库、run、commit、artifact 和成功
+结论；任何字段变化都会在 USB 打开前终止。该候选尚未获得当次写入授权。
+
 顺序如下；只有 `LocalCheck` 不打开 USB：
 
 ```powershell

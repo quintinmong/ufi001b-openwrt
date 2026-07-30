@@ -94,6 +94,14 @@ python3 scripts/verify-developer-artifact.py out/developer-ext4
 pwsh -File scripts/fetch-verify-actions-artifact.ps1 -RunId 123456789
 ```
 
+若一次传输已经留下不完整目录，保留它并用新的目录标签重试即可，不需要
+递归清理：
+
+```powershell
+pwsh -File scripts/fetch-verify-actions-artifact.ps1 -RunId 123456789 `
+  -DestinationName 123456789-retry1
+```
+
 该命令从现有 Git credential 获取 GitHub 凭据，凭据不会写入日志或产物；
 解压前还会拒绝越界 ZIP 路径。下载成功不等于可刷写，仍须在验证结果中
 记录新镜像哈希，并针对这对精确镜像重新取得用户授权。

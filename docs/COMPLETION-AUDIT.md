@@ -8,13 +8,13 @@
 | --- | --- | --- |
 | OpenWrt 25.12 / Linux 6.12 | 固定 OpenWrt 25.12.5 commit；产物 buildinfo 与 kernel 6.12.94 | 通过 |
 | MSM8916/UFI001B 目标 | msm89xx/msm8916 target、DTS、Android boot v0、eMMC p12/p14 规则 | 通过 |
-| developer-ext4 | 历史 boot/rootfs 的尺寸、metadata、`e2fsck -fn`、SHA-256 通过，但嵌入 IKCONFIG 缺少 `DEVTMPFS/MMC_BLOCK`；修复版正在重建 | 未通过 |
+| developer-ext4 | run `30503595724` 的 boot/rootfs 通过 9 项 SHA-256、metadata、最终 IKCONFIG、manifest 和 `e2fsck -fn`；尚待 HIL | 离线通过 |
 | stable-squashfs | 独立干净构建；SquashFS 解包、rootfs_data 对齐与约 3.27 GiB overlay | 通过 |
 | OpenClash/Mihomo | 0.47.133 / 1.19.29；独立 APK；AArch64 ELF；manifest 与根文件系统内容 | 通过 |
 | 透明代理依赖 | dnsmasq-full、TUN、nft socket/TPROXY、策略路由相关包/配置 | 离线通过 |
 | F2FS/zram | 内核模块、用户态工具、init/defaults 与 manifest | 离线通过 |
 | 可维护更新 | lock 更新脚本、OpenClash/Mihomo 拆包、静态门禁 | 通过 |
-| Actions | 修复 commit `2d388cf` 的 Static checks 已通过；developer Build firmware 正在运行 | 进行中 |
+| Actions | commit `2d388cf` 的 run `30503595724` 成功；artifact `8746656447` 已下载并离线复核 | 通过 |
 | APK 签名身份 | 外部 EC 私钥输入；artifact 只含公钥；双 profile/仓库 Variable 指纹门禁 | 通过 |
 | 供应链材料 | buildinfo、manifest、APK 公钥、SPDX 2.3 SBOM、SHA256SUMS | 通过 |
 | 安全边界 | 只允许 p12 boot 与 p14 rootfs；禁止 GPT、bootloader、modem/NV/校准进入写入或公开产物 | 通过 |
@@ -67,8 +67,7 @@ Windows 文件系统后曾分别重新验证 9/11 项
 
 ## 当前结论
 
-源码和配置覆盖根因已经修复，但当前修复版 Actions 仍在构建，尚无通过
-嵌入 IKCONFIG 与 ext4 离线门禁的新 artifact；Goal 尚未完成，后续还必须
-完成真实硬件 HIL。任何刷写都必须获得用户对新候选哈希的明确批准，并先从
-developer-ext4 开始。不得写 GPT、bootloader、baseband、NV、IMEI、
-modemst、fsc、fsg 或校准分区。
+源码、配置覆盖根因、Actions 构建和独立离线 artifact 门禁均已通过；Goal
+尚未完成，后续还必须获得用户对 run `30503595724` 两个精确镜像哈希的明确
+批准，并完成真实硬件 HIL。只能从 developer-ext4 开始，不得写 GPT、
+bootloader、baseband、NV、IMEI、modemst、fsc、fsg 或校准分区。

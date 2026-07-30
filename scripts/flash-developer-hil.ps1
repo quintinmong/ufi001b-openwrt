@@ -12,7 +12,9 @@ Set-StrictMode -Version Latest
 $repoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $workspaceRoot = Split-Path -Parent $repoRoot
 $deviceRoot = Join-Path $workspaceRoot 'UFI001B_410wifi'
-$candidateRoot = Join-Path $repoRoot 'out\developer-ext4'
+$candidateRunRoot = Join-Path $repoRoot 'out\actions\30503595724-retry1'
+$candidateRoot = Join-Path $candidateRunRoot 'ufi001b-developer-ext4'
+$candidateMetadata = Join-Path $candidateRunRoot 'run-metadata.json'
 $pythonExe = Join-Path $deviceRoot 'tools\pyembed\python.exe'
 $edlRoot = Join-Path $deviceRoot 'tools\edl-master'
 $edlEntry = Join-Path $edlRoot 'edl.py'
@@ -43,6 +45,11 @@ foreach ($candidate in @($boot, $rootfs)) {
 }
 
 $expected = [ordered]@{
+    Repository = 'quintinmong/ufi001b-openwrt'
+    RunId = 30503595724L
+    HeadSha = '2D388CF815F80313A5E7B5963A073A9BBE661D38'
+    ArtifactId = 8746656447L
+    ArtifactName = 'ufi001b-developer-ext4'
     LoaderSha256 = '959439AA5864685999B713C3ED12AD5FA408149648B670A9A9EF77BCC9DCAB14'
     BackupBytes = 3875520000L
     BackupSha256 = 'C7380138BFE9E4E509F90A900F6F7B580FFCFE52C2A577A8F12B8A4D7F2CA965'
@@ -50,13 +57,13 @@ $expected = [ordered]@{
     BootFirstLba = 526336L
     BootLastLba = 657407L
     BootBytes = 67108864L
-    BootImageBytes = 6365184L
-    BootSha256 = 'A1265330C1F8AD892DCD830B0F68689F255D3C3884BB2FC275DBF3581188507E'
+    BootImageBytes = 6379520L
+    BootSha256 = '4FA5BBAC35685395FBD7F0FBF04394E0F82AF370B157937E37E4FDA817FF63BE'
     RootfsFirstLba = 659456L
     RootfsLastLba = 7569374L
     RootfsBytes = 3537878528L
     RootfsImageBytes = 536870912L
-    RootfsSha256 = '8874BDE7229C5076FE5C00FA27FDAF57A32ABEC4629E0BB7139781DB33687B54'
+    RootfsSha256 = 'A1CC51903BEFF5E5916927572B53F406B26452E9ED1A8BE0A6C604373D2107AE'
 }
 
 $protectedHashes = [ordered]@{
@@ -82,6 +89,21 @@ function Assert-File {
     $actual = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToUpperInvariant()
     if ($actual -ne $Sha256) {
         throw "SHA-256 mismatch for $Path`: expected $Sha256, found $actual"
+    }
+}
+
+function Assert-CandidateProvenance {
+    if (-not (Test-Path -LiteralPath $candidateMetadata -PathType Leaf)) {
+        throw "Candidate run metadata is missing: $candidateMetadata"
+    }
+    $metadata = Get-Content -LiteralPath $candidateMetadata -Raw | ConvertFrom-Json
+    if ($metadata.repository -ne $expected.Repository -or
+        [long]$metadata.run_id -ne $expected.RunId -or
+        $metadata.head_sha.ToUpperInvariant() -ne $expected.HeadSha -or
+        [long]$metadata.artifact_id -ne $expected.ArtifactId -or
+        $metadata.artifact_name -ne $expected.ArtifactName -or
+        $metadata.conclusion -ne 'success') {
+        throw 'Candidate provenance metadata does not match the approved successful Actions artifact.'
     }
 }
 
@@ -264,6 +286,7 @@ foreach ($required in @($pythonExe, $edlEntry, $loader, $backup, $boot, $rootfs)
 }
 Assert-File -Path $loader -Bytes 93288L -Sha256 $expected.LoaderSha256
 Assert-File -Path $backup -Bytes $expected.BackupBytes -Sha256 $expected.BackupSha256
+Assert-CandidateProvenance
 Assert-File -Path $boot -Bytes $expected.BootImageBytes -Sha256 $expected.BootSha256
 Assert-File -Path $rootfs -Bytes $expected.RootfsImageBytes -Sha256 $expected.RootfsSha256
 
