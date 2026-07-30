@@ -118,6 +118,12 @@ def validate_developer_rootfs(debugfs: Path, rootfs: Path, manifest: str) -> Non
         raise SystemExit("developer rootfs gadget missing:\n- " + "\n- ".join(missing))
     if "modprobe g_ether" in gadget:
         raise SystemExit("developer rootfs retained the legacy g_ether startup path")
+
+    resize = read_ext4_file(debugfs, rootfs, "/etc/init.d/ufi001b-resize-rootfs")
+    if "START=90" not in resize:
+        raise SystemExit("rootfs resize must run after network and LuCI startup")
+    if "procd_set_param command" not in resize:
+        raise SystemExit("rootfs resize must not block the rcS startup sequence")
     if re.search(r"^kmod-usb-gadget-eth - \S+$", manifest, flags=re.MULTILINE) is None:
         raise SystemExit("developer manifest missing kmod-usb-gadget-eth")
     if re.search(r"^kmod-usb-gadget-serial - \S+$", manifest, flags=re.MULTILINE):
