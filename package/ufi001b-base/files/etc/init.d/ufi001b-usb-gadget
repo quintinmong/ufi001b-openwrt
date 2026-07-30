@@ -2,8 +2,10 @@
 
 # rc.common consumes these variables.
 # shellcheck disable=SC2034
-START=12
+START=15
 STOP=89
+
+GADGET=/sys/kernel/config/usb_gadget/ufi001b
 
 board_is_ufi001b() {
 	grep -qx 'handsome,openstick-ufi001b' /proc/device-tree/compatible 2>/dev/null ||
@@ -11,18 +13,81 @@ board_is_ufi001b() {
 		grep -qx 'handsome,openstick-ufi001b'
 }
 
+gadget_remove() {
+	[ -d "$GADGET" ] || return 0
+	[ ! -e "$GADGET/UDC" ] || printf '\n' > "$GADGET/UDC" 2>/dev/null || true
+	rm -f "$GADGET/os_desc/c.1"
+	rm -f "$GADGET/configs/c.1/rndis.usb0"
+	rmdir "$GADGET/functions/rndis.usb0" 2>/dev/null || true
+	rmdir "$GADGET/configs/c.1/strings/0x409" 2>/dev/null || true
+	rmdir "$GADGET/configs/c.1" 2>/dev/null || true
+	rmdir "$GADGET/strings/0x409" 2>/dev/null || true
+	rmdir "$GADGET" 2>/dev/null || true
+}
+
+device_identity() {
+	seed="$(cat /sys/devices/soc0/serial_number 2>/dev/null)"
+	[ -n "$seed" ] || seed="$(tr -d '\0' </proc/device-tree/serial-number 2>/dev/null)"
+	[ -n "$seed" ] || seed='ufi001b'
+	hash="$(printf '%s' "$seed" | sha256sum | cut -c1-12)"
+	USB_SERIAL="$(printf '%s' "$hash" | tr 'a-f' 'A-F')"
+	DEV_MAC="02:$(printf '%s' "$hash" | cut -c1-2):$(printf '%s' "$hash" | cut -c3-4):$(printf '%s' "$hash" | cut -c5-6):$(printf '%s' "$hash" | cut -c7-8):$(printf '%s' "$hash" | cut -c9-10)"
+	HOST_MAC="06:$(printf '%s' "$hash" | cut -c1-2):$(printf '%s' "$hash" | cut -c3-4):$(printf '%s' "$hash" | cut -c5-6):$(printf '%s' "$hash" | cut -c7-8):$(printf '%s' "$hash" | cut -c9-10)"
+}
+
+wait_for_udc() {
+	tries=0
+	while [ "$tries" -lt 30 ]; do
+		UDC="$(ls /sys/class/udc 2>/dev/null | head -n 1)"
+		[ -z "$UDC" ] || return 0
+		tries=$((tries + 1))
+		sleep 1
+	done
+	return 1
+}
+
 start() {
 	board_is_ufi001b || return 0
-	[ -d /sys/class/udc ] || return 0
-	[ -n "$(ls -A /sys/class/udc 2>/dev/null)" ] || return 0
-	[ -d /sys/class/net/usb0 ] && return 0
+	modprobe libcomposite || return 1
+	mkdir -p /sys/kernel/config
+	grep -qs ' /sys/kernel/config configfs ' /proc/mounts ||
+		mount -t configfs configfs /sys/kernel/config || return 1
+	wait_for_udc || return 1
+	device_identity
 
-	modprobe g_ether \
-		idVendor=0x1d6b idProduct=0x0104 \
-		iManufacturer=OpenWrt iProduct=UFI001B
+	# A legacy g_ether instance cannot share the single MSM8916 UDC.
+	rmmod g_ether 2>/dev/null || true
+	gadget_remove
+
+	mkdir -p "$GADGET/strings/0x409"
+	mkdir -p "$GADGET/configs/c.1/strings/0x409"
+	mkdir -p "$GADGET/functions/rndis.usb0"
+
+	printf '%s\n' 0x1d6b > "$GADGET/idVendor"
+	printf '%s\n' 0x0104 > "$GADGET/idProduct"
+	printf '%s\n' 0x0200 > "$GADGET/bcdUSB"
+	printf '%s\n' 0xef > "$GADGET/bDeviceClass"
+	printf '%s\n' 0x02 > "$GADGET/bDeviceSubClass"
+	printf '%s\n' 0x01 > "$GADGET/bDeviceProtocol"
+	printf '%s\n' "$USB_SERIAL" > "$GADGET/strings/0x409/serialnumber"
+	printf '%s\n' OpenWrt > "$GADGET/strings/0x409/manufacturer"
+	printf '%s\n' 'UFI001B RNDIS' > "$GADGET/strings/0x409/product"
+	printf '%s\n' 'RNDIS network' > "$GADGET/configs/c.1/strings/0x409/configuration"
+	printf '%s\n' "$DEV_MAC" > "$GADGET/functions/rndis.usb0/dev_addr"
+	printf '%s\n' "$HOST_MAC" > "$GADGET/functions/rndis.usb0/host_addr"
+
+	# Microsoft OS 1.0 descriptor: makes Windows bind netrndis.inf automatically.
+	printf '%s\n' 1 > "$GADGET/os_desc/use"
+	printf '%s\n' 0xcd > "$GADGET/os_desc/b_vendor_code"
+	printf '%s\n' MSFT100 > "$GADGET/os_desc/qw_sign"
+	printf '%s\n' RNDIS > "$GADGET/functions/rndis.usb0/os_desc/interface.rndis/compatible_id"
+	printf '%s\n' 5162001 > "$GADGET/functions/rndis.usb0/os_desc/interface.rndis/sub_compatible_id"
+	ln -s "$GADGET/functions/rndis.usb0" "$GADGET/configs/c.1/rndis.usb0"
+	ln -s "$GADGET/configs/c.1" "$GADGET/os_desc/c.1"
+	printf '%s\n' "$UDC" > "$GADGET/UDC"
 }
 
 stop() {
 	board_is_ufi001b || return 0
-	rmmod g_ether 2>/dev/null || true
+	gadget_remove
 }

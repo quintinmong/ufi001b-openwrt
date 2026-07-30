@@ -33,12 +33,31 @@ jobs:
             CONFIG_MMC=y \
             CONFIG_MMC_BLOCK=y \
             CONFIG_MMC_SDHCI=y \
-            CONFIG_MMC_SDHCI_MSM=y; do
+            CONFIG_MMC_SDHCI_MSM=y \
+            CONFIG_USB_CONFIGFS=m \
+            CONFIG_USB_CONFIGFS_RNDIS=y; do
             grep -qx "$symbol" "$config" || {
               echo "root-mount kernel config missing: $symbol" >&2
               exit 1
             }
           done
+          gadget=package/ufi001b-base/files/etc/init.d/ufi001b-usb-gadget
+          for token in \
+            'functions/rndis.usb0' \
+            'os_desc/use' \
+            'os_desc/b_vendor_code' \
+            'MSFT100' \
+            'compatible_id' \
+            '5162001'; do
+            grep -Fq "$token" "$gadget" || {
+              echo "UFI001B configfs RNDIS gadget missing: $token" >&2
+              exit 1
+            }
+          done
+          if grep -q 'kmod-usb-gadget-serial' openwrt-overlay/target/linux/msm89xx/Makefile; then
+            echo 'UFI001B must not install the legacy serial gadget by default' >&2
+            exit 1
+          fi
           for profile in configs/developer-ext4.config configs/stable-squashfs.config; do
             for symbol in CONFIG_KERNEL_DEVTMPFS=y CONFIG_KERNEL_DEVTMPFS_MOUNT=y; do
               grep -qx "$symbol" "$profile" || {

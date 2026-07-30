@@ -20,7 +20,7 @@ include $(INCLUDE_DIR)/target.mk
 
 DEFAULT_PACKAGES += e2fsprogs resize2fs block-mount losetup partx-utils \
 	modemmanager luci-proto-modemmanager wpad-basic-mbedtls \
-	kmod-qcom-msm8916-usb kmod-usb-gadget-eth kmod-usb-gadget-serial \
+	kmod-qcom-msm8916-usb kmod-usb-gadget-eth \
 	usbutils uclient-fetch ca-bundle
 
 $(eval $(call BuildTarget))
