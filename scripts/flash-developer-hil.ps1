@@ -72,6 +72,13 @@ $protectedHashes = [ordered]@{
     modemst2 = '651B0D3BAFBCD1AF54643D50B407D78523171E1B8C83D448CC7BA3676BA700EF'
 }
 
+$protectedFullHashes = [ordered]@{
+    fsc = '5F70BF18A086007016E948B04AED3B82103A36BEA41755B6CDDFAF10ACE3C6EF'
+    fsg = 'B7EB35B968806602F295C552C85D45C0222FBC3DD129A6E542BCAD108F10EC82'
+    modemst1 = '880309D6151B4F98B953F4AF68D5E4EFC9EDEDB12C896F58AA37E2C2596684C6'
+    modemst2 = '2EE62826779F6AE9BC7240666AFC4B83E0C794C353361F482D50948BDCFA9D31'
+}
+
 $protectedGeometry = [ordered]@{
     fsc = [pscustomobject]@{ FirstLba = 275488L; Sectors = 2L }
     fsg = [pscustomobject]@{ FirstLba = 393216L; Sectors = 4096L }
@@ -112,6 +119,43 @@ function Assert-File {
     $actual = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToUpperInvariant()
     if ($actual -ne $Sha256) {
         throw "SHA-256 mismatch for $Path`: expected $Sha256, found $actual"
+    }
+}
+
+function Assert-FilePrefix {
+    param(
+        [Parameter(Mandatory)] [string]$Path,
+        [Parameter(Mandatory)] [long]$Bytes,
+        [Parameter(Mandatory)] [string]$Sha256
+    )
+    $item = Get-Item -LiteralPath $Path
+    if ($item.Length -lt $Bytes) {
+        throw "File is shorter than the required prefix for $Path`: $($item.Length) < $Bytes"
+    }
+    $stream = [System.IO.File]::Open($Path, 'Open', 'Read', 'Read')
+    $hasher = [System.Security.Cryptography.IncrementalHash]::CreateHash(
+        [System.Security.Cryptography.HashAlgorithmName]::SHA256
+    )
+    try {
+        $buffer = [byte[]]::new(1MB)
+        $remaining = $Bytes
+        while ($remaining -gt 0) {
+            $requested = [int][Math]::Min($buffer.Length, $remaining)
+            $read = $stream.Read($buffer, 0, $requested)
+            if ($read -le 0) {
+                throw "Unexpected EOF while hashing prefix of $Path"
+            }
+            $hasher.AppendData($buffer, 0, $read)
+            $remaining -= $read
+        }
+        $actual = [Convert]::ToHexString($hasher.GetHashAndReset())
+    }
+    finally {
+        $hasher.Dispose()
+        $stream.Dispose()
+    }
+    if ($actual -ne $Sha256) {
+        throw "SHA-256 mismatch in first $Bytes bytes of $Path`: expected $Sha256, found $actual"
     }
 }
 
@@ -359,10 +403,12 @@ if ($Mode -eq 'AuditProtected') {
             throw "emmcdl did not report a completed $name read. Log: $log"
         }
         $reference = Join-Path $protectedBackupRoot "$name.bin"
-        $bytes = (Get-Item -LiteralPath $reference).Length
-        Assert-File -Path $reference -Bytes $bytes -Sha256 $protectedHashes[$name]
-        Assert-File -Path $path -Bytes $bytes -Sha256 $protectedHashes[$name]
-        Write-Host "$name MATCHES SAVED DEVICE-UNIQUE BACKUP" -ForegroundColor Green
+        $prefixBytes = (Get-Item -LiteralPath $reference).Length
+        $partitionBytes = $geometry.Sectors * 512
+        Assert-File -Path $reference -Bytes $prefixBytes -Sha256 $protectedHashes[$name]
+        Assert-File -Path $path -Bytes $partitionBytes -Sha256 $protectedFullHashes[$name]
+        Assert-FilePrefix -Path $path -Bytes $prefixBytes -Sha256 $protectedHashes[$name]
+        Write-Host "$name MATCHES FULL PRE-HIL SNAPSHOT AND DEVICE-UNIQUE BACKUP PREFIX" -ForegroundColor Green
     }
     Write-Host 'PROTECTED PARTITION AUDIT PASSED. No eMMC data was written.' -ForegroundColor Green
     exit 0
