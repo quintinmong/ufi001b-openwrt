@@ -106,11 +106,21 @@ def main() -> None:
     locks = json.loads(LOCK_FILE.read_text(encoding="utf-8"))["sources"]
     tree = args.tree.resolve()
     if not (tree / ".git").is_dir():
-        tree.parent.mkdir(parents=True, exist_ok=True)
+        tree.mkdir(parents=True, exist_ok=True)
+        unexpected = sorted(path.name for path in tree.iterdir() if path.name != "dl")
+        if unexpected:
+            raise SystemExit(
+                "refusing to initialize an OpenWrt tree containing anything other "
+                f"than the download cache: {', '.join(unexpected)}"
+            )
+        expected_commit = locks["openwrt"]["commit"]
+        run("git", "init", cwd=tree)
+        run("git", "remote", "add", "origin", locks["openwrt"]["url"], cwd=tree)
         run(
-            "git", "clone", "--filter=blob:none",
-            locks["openwrt"]["url"], str(tree), cwd=tree.parent,
+            "git", "fetch", "--filter=blob:none", "--no-tags", "origin",
+            expected_commit, cwd=tree,
         )
+        run("git", "checkout", "--detach", "FETCH_HEAD", cwd=tree)
 
     shallow = run(
         "git", "rev-parse", "--is-shallow-repository", cwd=tree, capture=True
