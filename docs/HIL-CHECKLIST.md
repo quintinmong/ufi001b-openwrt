@@ -40,6 +40,15 @@ count 为 0、last mount time 为 `never`，证明 rootfs 从未挂载。最终�
 内核因而无法创建 `/dev/mmcblk0p14`，在 `rootwait` 等待。源码与构建门禁已
 补齐 block/GPT/MMC block/ext4 根挂载链，等待 Actions 重建后再申请 HIL。
 
+Actions 第 6 次重建（commit `57c3401`）已完成内核、boot 和 512 MiB ext4
+rootfs，但最终产物校验拒绝上传：实际构建配置仍缺少 `DEVTMPFS`。进一步
+复现 OpenWrt 的 `.config.target` + `.config.override` 合并后确认，target
+内核片段会被顶层 `CONFIG_KERNEL_DEVTMPFS` 和未选择的 `kmod-mmc` 包元数据
+覆盖。现已在两个 profile 启用 devtmpfs 顶层开关，并把 `kmod-mmc` 加入
+UFI001B 设备包；本地以相同合并命令验证最终 config-set 中
+`DEVTMPFS/MMC_BLOCK/GPT/EXT4/SDHCI_MSM` 全部为内建。等待新 Actions 产物，
+此前镜像不得再次刷写。
+
 ## 阶段 B：无线和 modem
 
 - [ ] WCNSS remoteproc 启动，WCN36xx 加载；

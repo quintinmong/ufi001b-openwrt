@@ -141,7 +141,13 @@
   `rootwait` 永久等待。这与全部 HIL 现象一致；
 - 源配置现已明确加入 `CONFIG_BLOCK=y`、`CONFIG_EFI_PARTITION=y` 和
   `CONFIG_MMC_BLOCK=y`；构建校验及静态工作流新增完整 root-mount 内建链
-  门禁，避免再次产出无 mmc block 根设备的镜像。
+  门禁，避免再次产出无 mmc block 根设备的镜像；
+- Actions 第 6 次构建实际完成了内核和两张镜像，但产物校验发现最终配置中
+  `DEVTMPFS` 仍被关闭，因此没有上传 artifact。根因是 OpenWrt 顶层
+  `CONFIG_KERNEL_*` 与内核包元数据晚于 target 配置覆盖；两个 profile 已
+  启用 `CONFIG_KERNEL_DEVTMPFS`/`CONFIG_KERNEL_DEVTMPFS_MOUNT`，设备包已
+  选择 `kmod-mmc`。本地按 Actions 相同的 kconfig 合并流程确认最终
+  `DEVTMPFS`、`MMC_BLOCK`、GPT、ext4 和 SDHCI_MSM 均为 `y`。
 
 ## 当前门禁
 

@@ -39,6 +39,19 @@ jobs:
               exit 1
             }
           done
+          for profile in configs/developer-ext4.config configs/stable-squashfs.config; do
+            for symbol in CONFIG_KERNEL_DEVTMPFS=y CONFIG_KERNEL_DEVTMPFS_MOUNT=y; do
+              grep -qx "$symbol" "$profile" || {
+                echo "$profile missing OpenWrt kernel override: $symbol" >&2
+                exit 1
+              }
+            done
+          done
+          grep -Eq 'DEVICE_PACKAGES :=.*[[:space:]]kmod-mmc([[:space:]]|$)' \
+            openwrt-overlay/target/linux/msm89xx/image/msm8916.mk || {
+              echo 'UFI001B device packages must select kmod-mmc so package metadata cannot disable MMC_BLOCK' >&2
+              exit 1
+            }
           python3 - <<'PY'
           from pathlib import Path
           import re

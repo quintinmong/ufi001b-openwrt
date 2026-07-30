@@ -67,8 +67,8 @@ APK_SIGNING_KEY_FILE=/安全且不在仓库内的路径/ufi001b-apk-private-key.
 - boot image v0 的地址、页尺寸和命令行与参考镜像相同；
 - boot 解压内核不得含会随链接变化的 GNU SHA-1 build-id note；
 - p12 镜像不超过 64 MiB，rootfs 不越过 p14；
-- 内核具备 eMMC、USB gadget、remoteproc、WCN36xx、TUN、NFT TPROXY、
-  NFT socket 和 OverlayFS；
+- 内核具备 devtmpfs、内建 eMMC block/GPT/ext4 根挂载链、USB gadget、
+  remoteproc、WCN36xx、TUN、NFT TPROXY、NFT socket 和 OverlayFS；
 - 输出名称不含 GPT、bootloader、modemst、fsc/fsg 等危险对象；
 - 公开配置的 manifest 不含私有 Qualcomm 固件包。
 - developer ext4 必须通过只读 `e2fsck -fn`；
@@ -77,6 +77,13 @@ APK_SIGNING_KEY_FILE=/安全且不在仓库内的路径/ufi001b-apk-private-key.
 - stable 镜像内必须实际存在 OpenClash、AArch64 Mihomo、zram 与
   `mkfs.f2fs`，并校验对应 manifest 和 F2FS/ZRAM/loop 内核符号；
 - stable 镜像内的 libelf 不得含非确定性 GNU SHA-1 build-id note。
+
+仅在 target `config-6.12` 中写入 `DEVTMPFS` 或 `MMC_BLOCK` 不足以保证最终
+内核仍启用它们：OpenWrt 顶层 `CONFIG_KERNEL_*` 与内核包元数据会在
+`Kernel/Configure` 阶段再次覆盖配置。因此两个 profile 都显式选择
+`CONFIG_KERNEL_DEVTMPFS`/`CONFIG_KERNEL_DEVTMPFS_MOUNT`，UFI001B 的
+`DEVICE_PACKAGES` 也必须包含 `kmod-mmc`；最终门禁读取实际构建内核的
+`.config`，不以源片段代替产物证据。
 
 收集器按 profile 只复制对应的 ext4 或 SquashFS 镜像和 APK 公钥，stable
 另收集唯一的 OpenClash/Mihomo APK；生成 SPDX 2.3 SBOM 与
