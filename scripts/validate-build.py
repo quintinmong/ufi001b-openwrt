@@ -88,6 +88,42 @@ def run_text(command: tuple[str, ...]) -> str:
     return result.stdout
 
 
+def read_ext4_file(debugfs: Path, image: Path, path: str) -> str:
+    result = subprocess.run(
+        (str(debugfs), "-R", f"cat {path}", str(image)),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise SystemExit(f"cannot read {path} from ext4 image:\n{result.stdout}")
+    return result.stdout
+
+
+def validate_developer_rootfs(debugfs: Path, rootfs: Path, manifest: str) -> None:
+    if not debugfs.is_file():
+        raise SystemExit("host debugfs is missing")
+    gadget = read_ext4_file(debugfs, rootfs, "/etc/init.d/ufi001b-usb-gadget")
+    required = (
+        "functions/rndis.usb0",
+        "os_desc/use",
+        "os_desc/b_vendor_code",
+        "MSFT100",
+        "compatible_id",
+        "5162001",
+    )
+    missing = [token for token in required if token not in gadget]
+    if missing:
+        raise SystemExit("developer rootfs gadget missing:\n- " + "\n- ".join(missing))
+    if "modprobe g_ether" in gadget:
+        raise SystemExit("developer rootfs retained the legacy g_ether startup path")
+    if re.search(r"^kmod-usb-gadget-eth - \S+$", manifest, flags=re.MULTILINE) is None:
+        raise SystemExit("developer manifest missing kmod-usb-gadget-eth")
+    if re.search(r"^kmod-usb-gadget-serial - \S+$", manifest, flags=re.MULTILINE):
+        raise SystemExit("developer manifest retained kmod-usb-gadget-serial")
+
+
 def extract_embedded_kernel_config(boot: Path, metadata: dict[str, object]) -> str:
     """Extract CONFIG_IKCONFIG data from the gzip-compressed boot kernel."""
     image = boot.read_bytes()
@@ -320,6 +356,9 @@ def main() -> None:
         )
         if fsck.returncode != 0:
             raise SystemExit(f"ext4 consistency check failed:\n{fsck.stdout}")
+        validate_developer_rootfs(
+            args.tree / "staging_dir/host/bin/debugfs", rootfs, manifest
+        )
     else:
         rootfs_data_offset, overlay_bytes = validate_stable_rootfs(
             args.tree, rootfs, sizes["rootfs"], manifest

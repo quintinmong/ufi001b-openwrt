@@ -74,6 +74,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("artifact_dir", type=Path)
     parser.add_argument("--e2fsck", default=shutil.which("e2fsck"))
+    parser.add_argument("--debugfs", default=shutil.which("debugfs"))
     args = parser.parse_args()
 
     directory = args.artifact_dir.resolve()
@@ -150,11 +151,14 @@ def main() -> None:
     manifest = find_one(directory, "*.manifest").read_text(encoding="utf-8")
     if re.search(r"^kmod-mmc - \S+$", manifest, flags=re.MULTILINE) is None:
         raise SystemExit("package manifest missing kmod-mmc")
+    if not args.debugfs:
+        raise SystemExit("debugfs is required; pass --debugfs PATH")
+    BUILD_VALIDATOR.validate_developer_rootfs(Path(args.debugfs), rootfs, manifest)
 
     print(
         "verified developer artifact: "
         f"hashes={hash_count} boot={boot.stat().st_size} rootfs={rootfs.stat().st_size} "
-        "embedded-root-chain=ok manifest-mmc=ok ext4=ok"
+        "embedded-root-chain=ok manifest-mmc=ok configfs-rndis=ok ext4=ok"
     )
 
 
