@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         profile: ${{ github.event_name == 'pull_request' && fromJSON('["developer-ext4","stable-squashfs"]') || github.event_name == 'workflow_dispatch' && fromJSON(format('["{0}"]', inputs.profile)) || fromJSON('["developer-ext4"]') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 360
     env:
       BUILD_ROOT: /home/runner/work/_temp/ufi001b-openwrt-build
