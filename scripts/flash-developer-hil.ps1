@@ -12,7 +12,7 @@ Set-StrictMode -Version Latest
 $repoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $workspaceRoot = Split-Path -Parent $repoRoot
 $deviceRoot = Join-Path $workspaceRoot 'UFI001B_410wifi'
-$candidateRunRoot = Join-Path $repoRoot 'out\actions\30503595724-retry1'
+$candidateRunRoot = Join-Path $repoRoot 'out\actions\30525875718-rndis'
 $candidateRoot = Join-Path $candidateRunRoot 'ufi001b-developer-ext4'
 $candidateMetadata = Join-Path $candidateRunRoot 'run-metadata.json'
 $emmcdl = Join-Path $workspaceRoot 'tools\emmcdl\Qualcomm Premium Tool V2.4\emmcdl.exe'
@@ -34,6 +34,10 @@ $revokedCandidateHashes = [ordered]@{
         'boot lacks the final DEVTMPFS/MMC_BLOCK root-mount chain'
     '8874BDE7229C5076FE5C00FA27FDAF57A32ABEC4629E0BB7139781DB33687B54' =
         'rootfs belongs to the revoked boot/kernel ABI'
+    '4FA5BBAC35685395FBD7F0FBF04394E0F82AF370B157937E37E4FDA817FF63BE' =
+        'boot lacks the final configfs RNDIS kernel support'
+    'A1CC51903BEFF5E5916927572B53F406B26452E9ED1A8BE0A6C604373D2107AE' =
+        'rootfs retains the legacy g_ether startup path without Windows OS descriptors'
 }
 foreach ($candidate in @($boot, $rootfs)) {
     $candidateHash = (Get-FileHash -LiteralPath $candidate -Algorithm SHA256).Hash.ToUpperInvariant()
@@ -44,9 +48,9 @@ foreach ($candidate in @($boot, $rootfs)) {
 
 $expected = [ordered]@{
     Repository = 'quintinmong/ufi001b-openwrt'
-    RunId = 30503595724L
-    HeadSha = '2D388CF815F80313A5E7B5963A073A9BBE661D38'
-    ArtifactId = 8746656447L
+    RunId = 30525875718L
+    HeadSha = '2883453AAFABFFD8BDCFADD8D87F0054C9B9AC4A'
+    ArtifactId = 8756698528L
     ArtifactName = 'ufi001b-developer-ext4'
     EmmcdlSha256 = '24540D815142A3D63C4BF4A01FD4DB0C0AEFB26794749D65480CE0A9F2BC83BB'
     LoaderSha256 = '959439AA5864685999B713C3ED12AD5FA408149648B670A9A9EF77BCC9DCAB14'
@@ -56,13 +60,13 @@ $expected = [ordered]@{
     BootFirstLba = 526336L
     BootLastLba = 657407L
     BootBytes = 67108864L
-    BootImageBytes = 6379520L
-    BootSha256 = '4FA5BBAC35685395FBD7F0FBF04394E0F82AF370B157937E37E4FDA817FF63BE'
+    BootImageBytes = 6381568L
+    BootSha256 = 'D81DA3B9852152382B6DDEB55A99DA3864030F3C0EF2FB8DDEFF27D1E37A89C3'
     RootfsFirstLba = 659456L
     RootfsLastLba = 7569374L
     RootfsBytes = 3537878528L
     RootfsImageBytes = 536870912L
-    RootfsSha256 = 'A1CC51903BEFF5E5916927572B53F406B26452E9ED1A8BE0A6C604373D2107AE'
+    RootfsSha256 = '2A3CF2D89D32FC22BDAA56C67F9050DC91BC58B957BE611FCB3629F124355D18'
 }
 
 $protectedHashes = [ordered]@{
