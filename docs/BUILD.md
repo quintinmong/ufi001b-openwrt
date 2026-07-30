@@ -85,6 +85,19 @@ APK_SIGNING_KEY_FILE=/安全且不在仓库内的路径/ufi001b-apk-private-key.
 python3 scripts/verify-developer-artifact.py out/developer-ext4
 ```
 
+在 Windows 工作区中，可以按成功的 GitHub Actions run ID 一次性下载并
+执行同一门禁。脚本只接受已完成且结论为 `success` 的精确 run，只匹配一个
+`ufi001b-developer-ext4` artifact，拒绝覆盖既有 run 目录，并在
+`out/actions/<run-id>/run-metadata.json` 记录 commit 与 artifact 身份：
+
+```powershell
+pwsh -File scripts/fetch-verify-actions-artifact.ps1 -RunId 123456789
+```
+
+该命令从现有 Git credential 获取 GitHub 凭据，凭据不会写入日志或产物；
+解压前还会拒绝越界 ZIP 路径。下载成功不等于可刷写，仍须在验证结果中
+记录新镜像哈希，并针对这对精确镜像重新取得用户授权。
+
 它重新计算 `SHA256SUMS`、boot metadata、p12/p14 尺寸和 ext4 超级块，执行
 `e2fsck -fn`，并从 boot 内核的 IKCONFIG 载荷读取最终配置，验证完整根挂载
 与 USB/网络依赖；不会信任构建树中已经消失的临时 `.config`。
