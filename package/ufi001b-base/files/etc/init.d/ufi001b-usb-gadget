@@ -16,7 +16,42 @@ record_link_state() {
 	label="$1"
 	operstate="$(cat /sys/class/net/usb0/operstate 2>/dev/null)"
 	carrier="$(cat /sys/class/net/usb0/carrier 2>/dev/null)"
-	status "$label usb0 operstate=${operstate:-missing} carrier=${carrier:-missing}"
+	master="$(readlink /sys/class/net/usb0/master 2>/dev/null)"
+	status "$label usb0 operstate=${operstate:-missing} carrier=${carrier:-missing} master=${master##*/}"
+	for interface in usb0 br-lan; do
+		[ -e "/sys/class/net/$interface" ] || {
+			status "$label $interface missing"
+			continue
+		}
+		rx_bytes="$(cat "/sys/class/net/$interface/statistics/rx_bytes" 2>/dev/null)"
+		tx_bytes="$(cat "/sys/class/net/$interface/statistics/tx_bytes" 2>/dev/null)"
+		status "$label $interface rx=${rx_bytes:-missing} tx=${tx_bytes:-missing}"
+		ip -4 -o addr show dev "$interface" >> "$STATUS" 2>&1 || true
+	done
+}
+
+attach_lan_bridge() {
+	label="$1"
+	ifup lan >> "$STATUS" 2>&1 || status "$label ifup lan failed"
+	tries=0
+	while [ "$tries" -lt 10 ]; do
+		[ -e /sys/class/net/br-lan ] && break
+		tries=$((tries + 1))
+		sleep 1
+	done
+	[ -e /sys/class/net/br-lan ] || {
+		status "$label br-lan unavailable"
+		return 1
+	}
+	ip link set dev usb0 master br-lan >> "$STATUS" 2>&1 || {
+		status "$label attach usb0 to br-lan failed"
+		return 1
+	}
+	ip link set dev br-lan up >> "$STATUS" 2>&1 || status "$label ip link set br-lan up failed"
+	ip link set dev usb0 up >> "$STATUS" 2>&1 || {
+		status "$label ip link set usb0 up failed"
+		return 1
+	}
 }
 
 board_is_ufi001b() {
@@ -137,11 +172,7 @@ start() {
 		status 'usb0 unavailable after initial UDC bind'
 		return 1
 	}
-	ifup lan >> "$STATUS" 2>&1 || status 'initial-bind ifup lan failed'
-	ip link set dev usb0 up >> "$STATUS" 2>&1 || {
-		status 'initial-bind ip link set usb0 up failed'
-		return 1
-	}
+	attach_lan_bridge 'initial-bind' || return 1
 	record_link_state 'initial-bind'
 	printf '\n' > "$GADGET/UDC" || {
 		status 'UDC unbind failed'
@@ -156,9 +187,14 @@ start() {
 	}
 	status 'final UDC bound'
 	sleep 3
-	ifup lan >> "$STATUS" 2>&1 || status 'final-bind ifup lan failed'
-	ip link set dev usb0 up >> "$STATUS" 2>&1 || status 'final-bind ip link set usb0 up failed'
+	attach_lan_bridge 'final-bind' || return 1
 	record_link_state 'final-bind'
+	(
+		sleep 15
+		record_link_state 'delayed-15s'
+		sleep 45
+		record_link_state 'delayed-60s'
+	) &
 }
 
 stop() {

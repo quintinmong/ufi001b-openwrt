@@ -221,6 +221,9 @@ def validate_stable_rootfs(
         "MSFT100",
         "compatible_id",
         "5162001",
+        "ip link set dev usb0 master br-lan",
+        "delayed-15s",
+        "delayed-60s",
     ):
         if token not in gadget:
             raise SystemExit(f"stable USB gadget script missing {token}")

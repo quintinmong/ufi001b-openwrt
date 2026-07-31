@@ -77,11 +77,15 @@ jobs:
             '5162001' \
             'modprobe usb_f_rndis' \
             'wait_for_usb0' \
+            'attach_lan_bridge' \
+            'ip link set dev usb0 master br-lan' \
             'ip link set dev usb0 up' \
             'ifup lan' \
             'initial-bind' \
             'UDC unbound' \
-            'final-bind'; do
+            'final-bind' \
+            'delayed-15s' \
+            'delayed-60s'; do
             grep -Fq "$token" "$gadget" || {
               echo "UFI001B configfs RNDIS gadget missing: $token" >&2
               exit 1
