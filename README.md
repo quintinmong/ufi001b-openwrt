@@ -39,9 +39,10 @@ OpenClash/Mihomo APK。私钥永不进入产物。
 
 ## 当前状态
 
-源码和静态门禁已建立。最近一次 stable Actions 构建因 runner 磁盘耗尽失败，
-当前修改已加入空间清理和 Rust LLVM target 裁剪，尚待新 Actions run 证明。
-设备目前不在手边，因此没有最终 stable 候选获得刷写授权，也没有完成 HIL。
+stable Actions run `30597258946` 已成功，artifact `8783573556` 通过完整离线
+验证和 HIL `LocalCheck`。精确尺寸、哈希与 OverlayFS 布局见
+[当前候选](docs/CANDIDATE.md)。设备目前不在手边，因此候选尚未获得当次刷写
+授权，也没有完成 HIL。
 
 详见[构建](docs/BUILD.md)、[架构](docs/ARCHITECTURE.md)、
 [刷写与恢复](docs/FLASH-AND-RECOVERY.md)、[HIL 清单](docs/HIL-CHECKLIST.md)和

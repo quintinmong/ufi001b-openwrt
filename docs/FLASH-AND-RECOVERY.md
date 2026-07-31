@@ -24,8 +24,30 @@
 6. HIL 后再次审计 GPT 与受保护分区，确认没有变化。
 
 不得使用会重建 GPT 的 rawprogram，不得写入 bootloader、modem、NV、IMEI、
-EFS 或校准分区。当前尚未固定 stable 候选和 stable 专用 HIL 脚本，因此不得
-手工替代上述门禁执行刷写。
+EFS 或校准分区。当前候选固定在 [CANDIDATE.md](CANDIDATE.md)，只能使用
+`scripts/flash-stable-hil.ps1`，不得手工替代门禁执行刷写。
+
+设备不在手边时只运行本地检查：
+
+```powershell
+pwsh scripts/flash-stable-hil.ps1 -Mode LocalCheck
+```
+
+设备进入 9008 后依次执行只读检查、受保护分区审计、p14 和 p12。每个写入
+命令都需要精确确认文本；每次仍须重新取得用户授权：
+
+```powershell
+pwsh scripts/flash-stable-hil.ps1 -Mode Check
+pwsh scripts/flash-stable-hil.ps1 -Mode AuditProtected
+pwsh scripts/flash-stable-hil.ps1 -Mode FlashRootfs `
+  -Confirmation FLASH-UFI001B-STABLE-ROOTFS
+pwsh scripts/flash-stable-hil.ps1 -Mode FlashBoot `
+  -Confirmation FLASH-UFI001B-STABLE-BOOT
+```
+
+`FlashRootfs` 会先自动执行受保护分区审计；`FlashBoot` 会先从设备回读并确认
+配套 rootfs 的 SHA-256、SquashFS magic 与 `deadc0de`，因此不能绕过 p14 成对
+约束。
 
 ## 恢复
 

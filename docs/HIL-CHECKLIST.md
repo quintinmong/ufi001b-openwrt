@@ -1,10 +1,14 @@
 # UFI001B stable HIL 清单
 
+候选固定为 run `30597258946`、commit `cd67dfe`、artifact `8783573556`；完整
+哈希见 [CANDIDATE.md](CANDIDATE.md)。`LocalCheck` 已通过，以下设备项待执行。
+
 ## A. 离线与写前审计
 
-- [ ] 固定 run、commit、artifact ID、镜像尺寸和 SHA-256；
-- [ ] boot、DTB、IKCONFIG、SquashFS、`deadc0de`、F2FS 模块链全部通过；
-- [ ] PCB、loader、GPT、完整备份和受保护分区摘要与基线一致；
+- [x] 固定 run、commit、artifact ID、镜像尺寸和 SHA-256；
+- [x] boot、DTB、IKCONFIG、SquashFS、`deadc0de`、F2FS 模块链全部通过；
+- [x] loader、备份 GPT 和完整备份摘要与基线一致；
+- [ ] 实机 PCB、当前 GPT 和受保护分区摘要与基线一致；
 - [ ] 用户针对精确候选明确授权仅写 p14/p12。
 
 ## B. 写入与回读

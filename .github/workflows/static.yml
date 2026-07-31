@@ -107,6 +107,13 @@ jobs:
           import re
           import yaml
 
+          hil = Path('scripts/flash-stable-hil.ps1').read_text(encoding='utf-8')
+          write_targets = re.findall(r"'-b',\s*'([^']+)'", hil)
+          if hil.count("'-b'") != 2 or write_targets != ['rootfs', 'boot']:
+              raise SystemExit(
+                  f'HIL write targets must be exactly rootfs then boot: {write_targets}'
+              )
+
           for path in Path('.github/workflows').glob('*.yml'):
               text = path.read_text(encoding='utf-8')
               yaml.safe_load(text)
@@ -124,6 +131,26 @@ jobs:
           shellcheck scripts/*.sh
           find package -type f \( -path '*/files/etc/init.d/*' -o -path '*/files/etc/board.d/*' -o -path '*/files/etc/uci-defaults/*' -o -path '*/files/etc/hotplug.d/*' \) -print0 |
             xargs -0 -r shellcheck -s sh
+
+      - name: Parse PowerShell tooling without executing it
+        shell: pwsh
+        run: |
+          foreach ($path in @(
+            'scripts/fetch-verify-actions-artifact.ps1',
+            'scripts/flash-stable-hil.ps1'
+          )) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $path),
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -ne 0) {
+              $errors | Format-List
+              throw "PowerShell parse failed: $path"
+            }
+          }
 
       - name: Verify canonical Git mirror hashes
         run: |

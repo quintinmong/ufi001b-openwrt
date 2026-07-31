@@ -14,8 +14,14 @@
 - Rust bootstrap 限制并发，并将 LLVM target 裁剪为 `AArch64;X86`；
 - GitHub Actions stable runner 清理无关 SDK，并要求至少 30 GiB 可用；
 - 删除与最终 Goal 无关的 ext4 开发版构建、发布、验证和刷写入口。
+- 仓库已转为 public；完整 Git 历史未发现密钥、设备标识、备份或 proprietary
+  blob，4 个旧开发版 artifact 已从 GitHub 删除；
+- stable run `30597258946`（commit `cd67dfe`）成功，artifact `8783573556`
+  已下载并通过离线验证；
+- stable HIL 脚本已固定候选，`LocalCheck` 验证 provenance、备份、GPT、loader、
+  boot、SquashFS、F2FS preinit、RNDIS、marker 与哈希后通过，未打开 USB。
 
-## 最近一次构建
+## 已解决的构建失败
 
 stable run `30554242007`（commit `61beb7f`）在 Rust 1.94 host LLVM 的
 `3752/3795` 链接阶段失败。runner 仅余 5 MiB，`ld.bfd` 报告
@@ -23,11 +29,11 @@ stable run `30554242007`（commit `61beb7f`）在 Rust 1.94 host LLVM 的
 
 ## 待完成
 
-1. 提交并推送当前清理与磁盘修复；
-2. static checks 通过后运行新的 stable Actions build；
-3. 下载 artifact 并记录 provenance、尺寸、SHA-256 与 rootfs_data 布局；
-4. 创建并固定只允许 p14/p12 的 stable HIL 脚本；
-5. 设备可用且用户重新授权后完成写入、回读、冷启动和 HIL。
+1. 设备可用后重新确认 PCB、9008、当前 GPT 和受保护分区；
+2. 用户针对 [CANDIDATE.md](CANDIDATE.md) 的精确哈希明确授权；
+3. 仅写 p14、回读验证，再写 p12、回读验证；
+4. 正常重插、冷启动并完成 OverlayFS、网络、Wi-Fi、SIM 和基带 HIL；
+5. 再次审计 GPT 与受保护分区，更新最终状态。
 
 设备目前不在手边，禁止写入。OpenClash 运行测试不属于当前 Goal。
 
