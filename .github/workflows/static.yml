@@ -78,6 +78,7 @@ jobs:
             'modprobe usb_f_rndis' \
             'wait_for_usb0' \
             'attach_lan_bridge' \
+            'ifdown lan' \
             'ip link set dev usb0 master br-lan' \
             'ip link set dev usb0 up' \
             'ifup lan' \

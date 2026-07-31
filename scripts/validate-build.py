@@ -221,6 +221,7 @@ def validate_stable_rootfs(
         "MSFT100",
         "compatible_id",
         "5162001",
+        "ifdown lan",
         "ip link set dev usb0 master br-lan",
         "delayed-15s",
         "delayed-60s",

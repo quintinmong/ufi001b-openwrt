@@ -32,6 +32,11 @@ record_link_state() {
 
 attach_lan_bridge() {
 	label="$1"
+	restart_lan="$2"
+	if [ "$restart_lan" = 1 ]; then
+		status "$label restarting lan after usb0 creation"
+		ifdown lan >> "$STATUS" 2>&1 || status "$label ifdown lan failed"
+	fi
 	ifup lan >> "$STATUS" 2>&1 || status "$label ifup lan failed"
 	tries=0
 	while [ "$tries" -lt 10 ]; do
@@ -172,7 +177,7 @@ start() {
 		status 'usb0 unavailable after initial UDC bind'
 		return 1
 	}
-	attach_lan_bridge 'initial-bind' || return 1
+	attach_lan_bridge 'initial-bind' 1 || return 1
 	record_link_state 'initial-bind'
 	printf '\n' > "$GADGET/UDC" || {
 		status 'UDC unbind failed'
@@ -187,7 +192,7 @@ start() {
 	}
 	status 'final UDC bound'
 	sleep 3
-	attach_lan_bridge 'final-bind' || return 1
+	attach_lan_bridge 'final-bind' 0 || return 1
 	record_link_state 'final-bind'
 	(
 		sleep 15
