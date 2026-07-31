@@ -79,8 +79,9 @@ jobs:
             'wait_for_usb0' \
             'ip link set dev usb0 up' \
             'ifup lan' \
-            'pre-bind' \
-            'post-bind'; do
+            'initial-bind' \
+            'UDC unbound' \
+            'final-bind'; do
             grep -Fq "$token" "$gadget" || {
               echo "UFI001B configfs RNDIS gadget missing: $token" >&2
               exit 1

@@ -125,27 +125,40 @@ start() {
 	ln -s "$GADGET/functions/rndis.usb0" "$GADGET/configs/c.1/rndis.usb0"
 	ln -s "$GADGET/configs/c.1" "$GADGET/os_desc/c.1"
 
-	# Present an already-running netdev when Windows initializes RNDIS. Binding
-	# the UDC first can leave the host stuck at MEDIA_DISCONNECTED.
-	wait_for_usb0 || {
-		status 'usb0 unavailable before UDC bind'
-		return 1
-	}
-	ifup lan >> "$STATUS" 2>&1 || status 'pre-bind ifup lan failed'
-	ip link set dev usb0 up >> "$STATUS" 2>&1 || {
-		status 'pre-bind ip link set usb0 up failed'
-		return 1
-	}
-	record_link_state 'pre-bind'
+	# MSM8916 creates the RNDIS netdev only after the first UDC bind. Use that
+	# bind to instantiate usb0, prepare the LAN, then rebind so the host sees an
+	# already-running netdev during its final RNDIS initialization.
 	printf '%s\n' "$UDC" > "$GADGET/UDC" || {
-		status 'UDC bind failed'
+		status 'initial UDC bind failed'
 		return 1
 	}
-	status 'UDC bound'
+	status 'initial UDC bound'
+	wait_for_usb0 || {
+		status 'usb0 unavailable after initial UDC bind'
+		return 1
+	}
+	ifup lan >> "$STATUS" 2>&1 || status 'initial-bind ifup lan failed'
+	ip link set dev usb0 up >> "$STATUS" 2>&1 || {
+		status 'initial-bind ip link set usb0 up failed'
+		return 1
+	}
+	record_link_state 'initial-bind'
+	printf '\n' > "$GADGET/UDC" || {
+		status 'UDC unbind failed'
+		return 1
+	}
+	status 'UDC unbound'
+	sleep 1
+	record_link_state 'unbound'
+	printf '%s\n' "$UDC" > "$GADGET/UDC" || {
+		status 'final UDC bind failed'
+		return 1
+	}
+	status 'final UDC bound'
 	sleep 3
-	ifup lan >> "$STATUS" 2>&1 || status 'post-bind ifup lan failed'
-	ip link set dev usb0 up >> "$STATUS" 2>&1 || status 'post-bind ip link set usb0 up failed'
-	record_link_state 'post-bind'
+	ifup lan >> "$STATUS" 2>&1 || status 'final-bind ifup lan failed'
+	ip link set dev usb0 up >> "$STATUS" 2>&1 || status 'final-bind ip link set usb0 up failed'
+	record_link_state 'final-bind'
 }
 
 stop() {
