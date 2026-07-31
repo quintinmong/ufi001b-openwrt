@@ -6,6 +6,18 @@ START=25
 STOP=89
 
 GADGET=/sys/kernel/config/usb_gadget/ufi001b
+STATUS=/etc/ufi001b-usb-gadget.status
+
+status() {
+	printf '%s\n' "$*" >> "$STATUS"
+}
+
+record_link_state() {
+	label="$1"
+	operstate="$(cat /sys/class/net/usb0/operstate 2>/dev/null)"
+	carrier="$(cat /sys/class/net/usb0/carrier 2>/dev/null)"
+	status "$label usb0 operstate=${operstate:-missing} carrier=${carrier:-missing}"
+}
 
 board_is_ufi001b() {
 	grep -qx 'handsome,openstick-ufi001b' /proc/device-tree/compatible 2>/dev/null ||
@@ -62,12 +74,25 @@ wait_for_usb0() {
 }
 
 start() {
+	: > "$STATUS"
+	status 'start'
 	board_is_ufi001b || return 0
-	modprobe libcomposite || return 1
+	modprobe libcomposite || {
+		status 'modprobe libcomposite failed'
+		return 1
+	}
+	modprobe usb_f_rndis || {
+		status 'modprobe usb_f_rndis failed'
+		return 1
+	}
 	mkdir -p /sys/kernel/config
 	grep -qs ' /sys/kernel/config configfs ' /proc/mounts ||
 		mount -t configfs configfs /sys/kernel/config || return 1
-	wait_for_udc || return 1
+	wait_for_udc || {
+		status 'UDC unavailable'
+		return 1
+	}
+	status "UDC=$UDC"
 	device_identity
 
 	# A legacy g_ether instance cannot share the single MSM8916 UDC.
@@ -99,13 +124,28 @@ start() {
 	printf '%s\n' 5162001 > "$GADGET/functions/rndis.usb0/os_desc/interface.rndis/sub_compatible_id"
 	ln -s "$GADGET/functions/rndis.usb0" "$GADGET/configs/c.1/rndis.usb0"
 	ln -s "$GADGET/configs/c.1" "$GADGET/os_desc/c.1"
-	printf '%s\n' "$UDC" > "$GADGET/UDC"
 
-	# The RNDIS netdev is created asynchronously. Reconcile it with netifd after
-	# the network service has started so br-lan cannot miss its only port.
-	wait_for_usb0 || return 1
-	ip link set dev usb0 up || return 1
-	ifup lan || return 1
+	# Present an already-running netdev when Windows initializes RNDIS. Binding
+	# the UDC first can leave the host stuck at MEDIA_DISCONNECTED.
+	wait_for_usb0 || {
+		status 'usb0 unavailable before UDC bind'
+		return 1
+	}
+	ifup lan >> "$STATUS" 2>&1 || status 'pre-bind ifup lan failed'
+	ip link set dev usb0 up >> "$STATUS" 2>&1 || {
+		status 'pre-bind ip link set usb0 up failed'
+		return 1
+	}
+	record_link_state 'pre-bind'
+	printf '%s\n' "$UDC" > "$GADGET/UDC" || {
+		status 'UDC bind failed'
+		return 1
+	}
+	status 'UDC bound'
+	sleep 3
+	ifup lan >> "$STATUS" 2>&1 || status 'post-bind ifup lan failed'
+	ip link set dev usb0 up >> "$STATUS" 2>&1 || status 'post-bind ip link set usb0 up failed'
+	record_link_state 'post-bind'
 }
 
 stop() {

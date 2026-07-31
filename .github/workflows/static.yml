@@ -75,9 +75,12 @@ jobs:
             'MSFT100' \
             'compatible_id' \
             '5162001' \
+            'modprobe usb_f_rndis' \
             'wait_for_usb0' \
             'ip link set dev usb0 up' \
-            'ifup lan'; do
+            'ifup lan' \
+            'pre-bind' \
+            'post-bind'; do
             grep -Fq "$token" "$gadget" || {
               echo "UFI001B configfs RNDIS gadget missing: $token" >&2
               exit 1
