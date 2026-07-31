@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
-"""Offline verification for a downloaded UFI001B developer-ext4 artifact."""
+"""Common offline checks for downloaded UFI001B firmware artifacts."""
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import importlib.util
 import json
 import re
-import shutil
-import subprocess
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-LAYOUT = json.loads((ROOT / "board/ufi001b/partition-layout.json").read_text(encoding="utf-8"))
+LAYOUT = json.loads(
+    (ROOT / "board/ufi001b/partition-layout.json").read_text(encoding="utf-8")
+)
 REFERENCE = json.loads(
-    (ROOT / "board/ufi001b/reference/handsomemod-bootimg.json").read_text(encoding="utf-8")
+    (ROOT / "board/ufi001b/reference/handsomemod-bootimg.json").read_text(
+        encoding="utf-8"
+    )
 )
 
 
@@ -29,8 +30,9 @@ def load_module(name: str, path: Path):
     return module
 
 
-BOOT_INSPECTOR = load_module("boot_inspector", ROOT / "scripts/extract-reference-boot.py")
-BUILD_VALIDATOR = load_module("build_validator", ROOT / "scripts/validate-build.py")
+BOOT_INSPECTOR = load_module(
+    "boot_inspector", ROOT / "scripts/extract-reference-boot.py"
+)
 
 
 def find_one(directory: Path, pattern: str) -> Path:
@@ -70,7 +72,9 @@ def verify_hashes(directory: Path) -> int:
     return len(entries)
 
 
-def validate_common(directory: Path, fs_token: str) -> tuple[Path, Path, dict[str, object]]:
+def validate_common(
+    directory: Path, fs_token: str
+) -> tuple[Path, Path, dict[str, object]]:
     boot = find_one(directory, f"*-{fs_token}-boot.img")
     rootfs = find_one(directory, f"*-{fs_token}-rootfs.img")
 
@@ -105,67 +109,12 @@ def validate_common(directory: Path, fs_token: str) -> tuple[Path, Path, dict[st
     if boot_meta["cmdline"] != REFERENCE["cmdline"]:
         raise SystemExit("boot cmdline differs from approved p14 profile")
 
-    sizes = {partition["name"]: partition["size_bytes"] for partition in LAYOUT["partitions"]}
+    sizes = {
+        partition["name"]: partition["size_bytes"]
+        for partition in LAYOUT["partitions"]
+    }
     if boot.stat().st_size > sizes["boot"]:
         raise SystemExit("boot image exceeds p12")
     if rootfs.stat().st_size > sizes["rootfs"]:
         raise SystemExit("rootfs image exceeds p14")
     return boot, rootfs, boot_meta
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("artifact_dir", type=Path)
-    parser.add_argument("--e2fsck", default=shutil.which("e2fsck"))
-    parser.add_argument("--debugfs", default=shutil.which("debugfs"))
-    args = parser.parse_args()
-
-    directory = args.artifact_dir.resolve()
-    if not directory.is_dir():
-        raise SystemExit(f"artifact directory does not exist: {directory}")
-    hash_count = verify_hashes(directory)
-    boot, rootfs, boot_meta = validate_common(directory, "ext4")
-    with rootfs.open("rb") as handle:
-        handle.seek(1024 + 56)
-        if handle.read(2) != b"\x53\xef":
-            raise SystemExit("rootfs does not contain an ext4 superblock")
-
-    if not args.e2fsck:
-        raise SystemExit("e2fsck is required; pass --e2fsck PATH")
-    fsck = subprocess.run(
-        (args.e2fsck, "-fn", str(rootfs)),
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
-    if fsck.returncode != 0:
-        raise SystemExit(f"ext4 consistency check failed:\n{fsck.stdout}")
-
-    config = BUILD_VALIDATOR.extract_embedded_kernel_config(boot, boot_meta)
-    missing = BUILD_VALIDATOR.missing_kernel_config(config)
-    if missing:
-        raise SystemExit("embedded kernel config missing:\n- " + "\n- ".join(missing))
-    buildinfo = (directory / "config.buildinfo").read_text(encoding="utf-8")
-    for symbol in (
-        "CONFIG_KERNEL_DEVTMPFS=y",
-        "CONFIG_KERNEL_DEVTMPFS_MOUNT=y",
-    ):
-        if symbol not in buildinfo:
-            raise SystemExit(f"config.buildinfo missing {symbol}")
-    manifest = find_one(directory, "*.manifest").read_text(encoding="utf-8")
-    if re.search(r"^kmod-mmc - \S+$", manifest, flags=re.MULTILINE) is None:
-        raise SystemExit("package manifest missing kmod-mmc")
-    if not args.debugfs:
-        raise SystemExit("debugfs is required; pass --debugfs PATH")
-    BUILD_VALIDATOR.validate_developer_rootfs(Path(args.debugfs), rootfs, manifest)
-
-    print(
-        "verified developer artifact: "
-        f"hashes={hash_count} boot={boot.stat().st_size} rootfs={rootfs.stat().st_size} "
-        "embedded-root-chain=ok manifest-mmc=ok configfs-rndis=ok ext4=ok"
-    )
-
-
-if __name__ == "__main__":
-    main()

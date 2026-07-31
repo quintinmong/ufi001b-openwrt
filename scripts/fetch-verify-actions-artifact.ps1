@@ -8,7 +8,8 @@ param(
     [string]$Repository = 'quintinmong/ufi001b-openwrt',
 
     [ValidatePattern('^[A-Za-z0-9_.-]+$')]
-    [string]$ArtifactName = 'ufi001b-developer-ext4',
+    [ValidateScript({ $_ -eq 'ufi001b-stable-squashfs' })]
+    [string]$ArtifactName = 'ufi001b-stable-squashfs',
 
     [ValidatePattern('^[A-Za-z0-9_.-]+$')]
     [string]$DestinationName,
@@ -170,11 +171,7 @@ $metadata | ConvertTo-Json | Set-Content -LiteralPath $metadataPath -Encoding ut
 
 $repoWsl = Convert-ToWslPath -Path $repoRoot
 $artifactWsl = Convert-ToWslPath -Path $verificationRoot
-$verifier = switch ($ArtifactName) {
-    'ufi001b-developer-ext4' { 'scripts/verify-developer-artifact.py' }
-    'ufi001b-stable-squashfs' { 'scripts/verify-stable-artifact.py' }
-    default { throw "No offline verifier is defined for artifact $ArtifactName" }
-}
+$verifier = 'scripts/verify-stable-artifact.py'
 $command = 'cd ' + (Quote-BashLiteral $repoWsl) +
     ' && python3 ' + (Quote-BashLiteral $verifier) + ' ' + (Quote-BashLiteral $artifactWsl)
 & wsl.exe -d $WslDistribution -- bash -lc $command

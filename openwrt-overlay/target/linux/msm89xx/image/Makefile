@@ -26,22 +26,16 @@ define Build/qcom-bootimg
 	rm -f $@.kernel-dtb $@.empty-ramdisk
 endef
 
-define Build/ufi001b-e2fsck
-	rc=0; $(STAGING_DIR_HOST)/bin/e2fsck -pDf $@ || rc=$$?; \
-		[ "$$rc" -le 1 ]
-endef
-
 define Device/Default
   PROFILES := Default
   DEVICE_DTS_DIR := $(DTS_DIR)/qcom
   KERNEL_NAME := Image.gz
   KERNEL := kernel-bin
-  FILESYSTEMS := squashfs ext4
+  FILESYSTEMS := squashfs
   IMAGES := boot.img rootfs.img
   IMAGE/boot.img := qcom-bootimg | check-size 65536k
   IMAGE/rootfs.img := append-rootfs | check-size 3454959k
   IMAGE/rootfs.img/squashfs := append-rootfs | pad-rootfs | pad-to 512 | check-size 3454959k
-  IMAGE/rootfs.img/ext4 := append-rootfs | ufi001b-e2fsck | check-size 3454959k
   QCOM_BOOTIMG_BASE := 0x80000000
   QCOM_BOOTIMG_KERNEL_OFFSET := 0x00080000
   QCOM_BOOTIMG_RAMDISK_OFFSET := 0x02000000

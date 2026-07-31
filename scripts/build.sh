@@ -5,7 +5,7 @@ set -euo pipefail
 umask 022
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-profile="${1:-developer-ext4}"
+profile="stable-squashfs"
 build_root="${BUILD_ROOT:-$HOME/ufi001b-openwrt-build}"
 output_root="${OUTPUT_ROOT:-$repo_root/out}"
 tree="$build_root/openwrt"
@@ -30,10 +30,10 @@ fi
 
 mkdir -p "$build_root"
 
-case "$profile" in
-developer-ext4|stable-squashfs) ;;
-*) echo "usage: $0 {developer-ext4|stable-squashfs}" >&2; exit 2 ;;
-esac
+if (( $# != 0 )); then
+	echo "usage: $0" >&2
+	exit 2
+fi
 
 if [[ "$(stat -f -c %T "$build_root" 2>/dev/null || true)" == "9p" ]]; then
 	echo "BUILD_ROOT must be on a case-sensitive Linux filesystem, not /mnt/*" >&2
@@ -61,32 +61,26 @@ fi
 
 cp "$repo_root/configs/$profile.config" "$tree/.config"
 if [[ "$private_firmware" == 1 ]]; then
-	if [[ "$profile" != developer-ext4 ]]; then
-		echo "private firmware is allowed only for the local developer HIL image" >&2
-		exit 1
-	fi
 	cat "$repo_root/configs/hil-private-firmware.config" >> "$tree/.config"
 fi
 
 make -C "$tree" defconfig
 make -C "$tree" download -j"$jobs"
-if [[ "$profile" == stable-squashfs ]]; then
-	rust_jobs="$jobs"
-	if (( rust_jobs > 4 )); then
-		rust_jobs=4
-	fi
-	make -C "$tree" package/feeds/packages/rust/host/configure -j1 V=sc
-	python3 "$repo_root/scripts/configure-rust-jobs.py" \
-		--tree "$tree" --jobs "$rust_jobs"
+rust_jobs="$jobs"
+if (( rust_jobs > 4 )); then
+	rust_jobs=4
 fi
+make -C "$tree" package/feeds/packages/rust/host/configure -j1 V=sc
+python3 "$repo_root/scripts/configure-rust-jobs.py" \
+	--tree "$tree" --jobs "$rust_jobs"
 make -C "$tree" -j"$jobs" V=sc
 
-validate_args=(--tree "$tree" --profile "$profile")
+validate_args=(--tree "$tree")
 if [[ "$private_firmware" == 1 ]]; then
 	validate_args+=(--allow-private-firmware)
 fi
 python3 "$repo_root/scripts/validate-build.py" "${validate_args[@]}"
 python3 "$repo_root/scripts/collect-artifacts.py" \
-	--tree "$tree" --profile "$profile" --out "$output_root/$profile"
+	--tree "$tree" --out "$output_root/$profile"
 
 echo "build completed: $output_root/$profile"

@@ -2,18 +2,7 @@ name: Build firmware
 
 on:
   pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
-    inputs:
-      profile:
-        description: Firmware profile to build
-        required: true
-        default: developer-ext4
-        type: choice
-        options:
-          - developer-ext4
-          - stable-squashfs
 
 permissions:
   contents: read
@@ -22,10 +11,6 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        profile: ${{ github.event_name == 'pull_request' && fromJSON('["developer-ext4","stable-squashfs"]') || github.event_name == 'workflow_dispatch' && fromJSON(format('["{0}"]', inputs.profile)) || fromJSON('["developer-ext4"]') }}
     runs-on: ubuntu-26.04
     timeout-minutes: 360
     env:
@@ -34,6 +19,26 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Reclaim runner space for Rust toolchain
+        run: |
+          df -h /
+          for path in \
+            /usr/local/lib/android \
+            /usr/share/dotnet \
+            /opt/ghc \
+            /usr/local/.ghcup; do
+            if [[ -e "$path" ]]; then
+              sudo rm -rf --one-file-system "$path"
+            fi
+          done
+          sudo apt-get clean
+          df -h /
+          available_kib="$(df --output=avail / | tail -n 1)"
+          if (( available_kib < 30 * 1024 * 1024 )); then
+            echo "stable build requires at least 30 GiB free after cleanup" >&2
+            exit 1
+          fi
 
       - name: Preflight repository signing identity
         if: github.event_name != 'pull_request'
@@ -65,11 +70,11 @@ jobs:
           path: ${{ env.BUILD_ROOT }}/openwrt/dl
           key: openwrt-dl-${{ hashFiles('locks/sources.lock.json') }}
 
-      - name: Build and validate unsigned PR candidate ${{ matrix.profile }}
+      - name: Build and validate unsigned PR candidate
         if: github.event_name == 'pull_request'
-        run: scripts/build.sh '${{ matrix.profile }}'
+        run: scripts/build.sh
 
-      - name: Build and validate signed ${{ matrix.profile }}
+      - name: Build and validate signed firmware
         if: github.event_name != 'pull_request'
         env:
           APK_SIGNING_KEY_PEM: ${{ secrets.APK_SIGNING_KEY_PEM }}
@@ -81,7 +86,7 @@ jobs:
           key_file="$RUNNER_TEMP/ufi001b-apk-private-key.pem"
           (umask 077; printf '%s\n' "$APK_SIGNING_KEY_PEM" > "$key_file")
           export APK_SIGNING_KEY_FILE="$key_file"
-          scripts/build.sh '${{ matrix.profile }}'
+          scripts/build.sh
 
       - name: Verify repository signing identity
         if: github.event_name != 'pull_request'
@@ -92,14 +97,14 @@ jobs:
             echo 'APK_SIGNING_PUBLIC_KEY_SHA256 repository variable is missing or invalid' >&2
             exit 1
           fi
-          actual="$(sha256sum "out/${{ matrix.profile }}/apk-signing-public-key.pem" | cut -d' ' -f1)"
+          actual="$(sha256sum out/stable-squashfs/apk-signing-public-key.pem | cut -d' ' -f1)"
           test "$actual" = "$EXPECTED_PUBLIC_KEY_SHA256"
 
       - name: Upload allow-listed build outputs
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: ufi001b-${{ matrix.profile }}
-          path: out/${{ matrix.profile }}/
+          name: ufi001b-stable-squashfs
+          path: out/stable-squashfs/
           if-no-files-found: error
           retention-days: 3
 
@@ -107,4 +112,4 @@ jobs:
         if: github.event_name != 'pull_request' && github.event.repository.visibility == 'public'
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
         with:
-          subject-path: out/${{ matrix.profile }}/*
+          subject-path: out/stable-squashfs/*

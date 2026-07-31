@@ -24,7 +24,6 @@ REQUIRED_KERNEL_CONFIG = (
     "CONFIG_BLOCK=y",
     "CONFIG_DEVTMPFS=y",
     "CONFIG_EFI_PARTITION=y",
-    "CONFIG_EXT4_FS=y",
     "CONFIG_MMC=y",
     "CONFIG_MMC_BLOCK=y",
     "CONFIG_MMC_SDHCI=y",
@@ -86,48 +85,6 @@ def run_text(command: tuple[str, ...]) -> str:
     if result.returncode != 0:
         raise SystemExit(f"command failed ({result.returncode}): {' '.join(command)}\n{result.stdout}")
     return result.stdout
-
-
-def read_ext4_file(debugfs: Path, image: Path, path: str) -> str:
-    result = subprocess.run(
-        (str(debugfs), "-R", f"cat {path}", str(image)),
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
-    if result.returncode != 0:
-        raise SystemExit(f"cannot read {path} from ext4 image:\n{result.stdout}")
-    return result.stdout
-
-
-def validate_developer_rootfs(debugfs: Path, rootfs: Path, manifest: str) -> None:
-    if not debugfs.is_file():
-        raise SystemExit("host debugfs is missing")
-    gadget = read_ext4_file(debugfs, rootfs, "/etc/init.d/ufi001b-usb-gadget")
-    required = (
-        "functions/rndis.usb0",
-        "os_desc/use",
-        "os_desc/b_vendor_code",
-        "MSFT100",
-        "compatible_id",
-        "5162001",
-    )
-    missing = [token for token in required if token not in gadget]
-    if missing:
-        raise SystemExit("developer rootfs gadget missing:\n- " + "\n- ".join(missing))
-    if "modprobe g_ether" in gadget:
-        raise SystemExit("developer rootfs retained the legacy g_ether startup path")
-
-    resize = read_ext4_file(debugfs, rootfs, "/etc/init.d/ufi001b-resize-rootfs")
-    if "START=90" not in resize:
-        raise SystemExit("rootfs resize must run after network and LuCI startup")
-    if "procd_set_param command" not in resize:
-        raise SystemExit("rootfs resize must not block the rcS startup sequence")
-    if re.search(r"^kmod-usb-gadget-eth - \S+$", manifest, flags=re.MULTILINE) is None:
-        raise SystemExit("developer manifest missing kmod-usb-gadget-eth")
-    if re.search(r"^kmod-usb-gadget-serial - \S+$", manifest, flags=re.MULTILINE):
-        raise SystemExit("developer manifest retained kmod-usb-gadget-serial")
 
 
 def extract_embedded_kernel_config(boot: Path, metadata: dict[str, object]) -> str:
@@ -214,6 +171,7 @@ def validate_stable_rootfs(
     listing = run_text((str(unsquashfs), "-ll", str(rootfs)))
     required_paths = (
         "squashfs-root/etc/init.d/openclash",
+        "squashfs-root/etc/init.d/ufi001b-usb-gadget",
         "squashfs-root/etc/init.d/zram",
         "squashfs-root/etc/modules-boot.d/30-fs-f2fs",
         "squashfs-root/etc/openclash/core/clash_meta",
@@ -224,6 +182,50 @@ def validate_stable_rootfs(
     missing_paths = [path for path in required_paths if path not in listing]
     if missing_paths:
         raise SystemExit("SquashFS missing:\n- " + "\n- ".join(missing_paths))
+
+    if not re.search(
+        r"squashfs-root/etc/modules-boot\.d/30-fs-f2fs"
+        r" -> \.\./modules\.d/30-fs-f2fs$",
+        listing,
+        re.MULTILINE,
+    ):
+        raise SystemExit("SquashFS F2FS boot-module symlink has an unexpected target")
+    if not re.search(
+        r"squashfs-root/lib/modules/[^/\s]+/f2fs\.ko$", listing, re.MULTILINE
+    ):
+        raise SystemExit("SquashFS is missing the F2FS kernel module")
+
+    boot_modules = run_text(
+        (
+            str(unsquashfs),
+            "-cat",
+            str(rootfs),
+            "etc/modules.d/30-fs-f2fs",
+        )
+    )
+    if boot_modules.splitlines() != ["f2fs"]:
+        raise SystemExit("SquashFS F2FS boot-module list is unexpected")
+
+    gadget = run_text(
+        (
+            str(unsquashfs),
+            "-cat",
+            str(rootfs),
+            "etc/init.d/ufi001b-usb-gadget",
+        )
+    )
+    for token in (
+        "functions/rndis.usb0",
+        "os_desc/use",
+        "os_desc/b_vendor_code",
+        "MSFT100",
+        "compatible_id",
+        "5162001",
+    ):
+        if token not in gadget:
+            raise SystemExit(f"stable USB gadget script missing {token}")
+    if "modprobe g_ether" in gadget:
+        raise SystemExit("stable rootfs retained the legacy g_ether startup path")
 
     defaults = run_text(
         (
@@ -298,6 +300,7 @@ def validate_stable_rootfs(
         "kmod-nft-socket",
         "kmod-nft-tproxy",
         "kmod-tun",
+        "kmod-usb-gadget-eth",
         "kmod-zram",
         "luci-app-openclash",
         "mihomo-openclash",
@@ -313,12 +316,11 @@ def validate_stable_rootfs(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tree", required=True, type=Path)
-    parser.add_argument("--profile", required=True, choices=("developer-ext4", "stable-squashfs"))
     parser.add_argument("--allow-private-firmware", action="store_true")
     args = parser.parse_args()
 
     bin_dir = args.tree / "bin/targets/msm89xx/msm8916"
-    fs_token = "ext4" if args.profile == "developer-ext4" else "squashfs"
+    fs_token = "squashfs"
     boot = find_one(bin_dir, f"*{fs_token}*boot.img")
     rootfs = find_one(bin_dir, f"*{fs_token}*rootfs.img")
 
@@ -359,31 +361,12 @@ def main() -> None:
     manifest_path = find_one(bin_dir, "*.manifest")
     manifest = manifest_path.read_text(encoding="utf-8", errors="replace")
 
-    rootfs_data_offset = None
-    overlay_bytes = None
-    if args.profile == "developer-ext4":
-        e2fsck = args.tree / "staging_dir/host/bin/e2fsck"
-        if not e2fsck.is_file():
-            raise SystemExit("host e2fsck is missing")
-        fsck = subprocess.run(
-            (str(e2fsck), "-fn", str(rootfs)),
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            check=False,
-        )
-        if fsck.returncode != 0:
-            raise SystemExit(f"ext4 consistency check failed:\n{fsck.stdout}")
-        validate_developer_rootfs(
-            args.tree / "staging_dir/host/bin/debugfs", rootfs, manifest
-        )
-    else:
-        rootfs_data_offset, overlay_bytes = validate_stable_rootfs(
-            args.tree / "staging_dir/host/bin/unsquashfs4",
-            rootfs,
-            sizes["rootfs"],
-            manifest,
-        )
+    rootfs_data_offset, overlay_bytes = validate_stable_rootfs(
+        args.tree / "staging_dir/host/bin/unsquashfs4",
+        rootfs,
+        sizes["rootfs"],
+        manifest,
+    )
 
     config = read_kernel_config(args.tree)
     missing = missing_kernel_config(config)
@@ -394,24 +377,23 @@ def main() -> None:
     if embedded_missing:
         raise SystemExit("embedded kernel config missing:\n- " + "\n- ".join(embedded_missing))
 
-    if args.profile == "stable-squashfs":
-        stable_required = (
-            "CONFIG_BLK_DEV_LOOP=y",
-            "CONFIG_F2FS_FS=m",
-            "CONFIG_ZRAM=m",
-            "CONFIG_ZSMALLOC=m",
+    stable_required = (
+        "CONFIG_BLK_DEV_LOOP=y",
+        "CONFIG_F2FS_FS=m",
+        "CONFIG_ZRAM=m",
+        "CONFIG_ZSMALLOC=m",
+    )
+    stable_missing = [symbol for symbol in stable_required if symbol not in config]
+    if stable_missing:
+        raise SystemExit("stable kernel config missing:\n- " + "\n- ".join(stable_missing))
+    embedded_stable_missing = [
+        symbol for symbol in stable_required if symbol not in embedded_config
+    ]
+    if embedded_stable_missing:
+        raise SystemExit(
+            "embedded stable kernel config missing:\n- "
+            + "\n- ".join(embedded_stable_missing)
         )
-        stable_missing = [symbol for symbol in stable_required if symbol not in config]
-        if stable_missing:
-            raise SystemExit("stable kernel config missing:\n- " + "\n- ".join(stable_missing))
-        embedded_stable_missing = [
-            symbol for symbol in stable_required if symbol not in embedded_config
-        ]
-        if embedded_stable_missing:
-            raise SystemExit(
-                "embedded stable kernel config missing:\n- "
-                + "\n- ".join(embedded_stable_missing)
-            )
 
     names = [path.name.lower() for path in bin_dir.iterdir() if path.is_file()]
     forbidden = re.compile(r"(gpt|partition-table|rawprogram|patch\d.*xml|modemst|fsc|fsg|sbl|aboot)")
@@ -424,9 +406,11 @@ def main() -> None:
         if any(name in manifest for name in private_names):
             raise SystemExit("private Qualcomm firmware leaked into public build")
 
-    message = f"validated {args.profile}: boot={boot.stat().st_size} rootfs={rootfs.stat().st_size}"
-    if rootfs_data_offset is not None and overlay_bytes is not None:
-        message += f" rootfs_data_offset={rootfs_data_offset} overlay={overlay_bytes}"
+    message = (
+        "validated stable-squashfs: "
+        f"boot={boot.stat().st_size} rootfs={rootfs.stat().st_size} "
+        f"rootfs_data_offset={rootfs_data_offset} overlay={overlay_bytes}"
+    )
     print(message)
 
 

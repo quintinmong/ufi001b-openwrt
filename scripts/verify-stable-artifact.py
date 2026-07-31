@@ -24,7 +24,7 @@ def load_module(name: str, path: Path):
 
 
 COMMON = load_module(
-    "developer_artifact_verifier", ROOT / "scripts/verify-developer-artifact.py"
+    "artifact_common", ROOT / "scripts/verify-artifact-common.py"
 )
 BUILD_VALIDATOR = load_module("build_validator", ROOT / "scripts/validate-build.py")
 

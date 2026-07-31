@@ -52,15 +52,7 @@ jobs:
           test "$tag_sha" = "$run_sha"
           test "$conclusion" = success
           test "$workflow" = 'Build firmware'
-          test "$event" = push -o "$event" = workflow_dispatch
-
-      - name: Download developer artifact
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: ufi001b-developer-ext4
-          path: release/developer-ext4
-          run-id: ${{ inputs.run_id }}
-          github-token: ${{ github.token }}
+          test "$event" = workflow_dispatch
 
       - name: Download stable artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -81,21 +73,15 @@ jobs:
         env:
           EXPECTED_APK_KEY_SHA256: ${{ vars.APK_SIGNING_PUBLIC_KEY_SHA256 }}
         run: |
-          test "$(find release/developer-ext4 -maxdepth 1 -name '*-ext4-boot.img' | wc -l)" -eq 1
-          test "$(find release/developer-ext4 -maxdepth 1 -name '*-ext4-rootfs.img' | wc -l)" -eq 1
           test "$(find release/stable-squashfs -maxdepth 1 -name '*-squashfs-boot.img' | wc -l)" -eq 1
           test "$(find release/stable-squashfs -maxdepth 1 -name '*-squashfs-rootfs.img' | wc -l)" -eq 1
           test "$(find release/stable-squashfs -maxdepth 1 -name 'luci-app-openclash-*.apk' | wc -l)" -eq 1
           test "$(find release/stable-squashfs -maxdepth 1 -name 'mihomo-openclash-*.apk' | wc -l)" -eq 1
-          test "$(find release/developer-ext4 -maxdepth 1 -name 'apk-signing-public-key.pem' | wc -l)" -eq 1
           test "$(find release/stable-squashfs -maxdepth 1 -name 'apk-signing-public-key.pem' | wc -l)" -eq 1
-          (cd release/developer-ext4 && sha256sum -c SHA256SUMS)
           (cd release/stable-squashfs && sha256sum -c SHA256SUMS)
           test -n "$EXPECTED_APK_KEY_SHA256"
-          developer_key_sha="$(sha256sum release/developer-ext4/apk-signing-public-key.pem | cut -d' ' -f1)"
           stable_key_sha="$(sha256sum release/stable-squashfs/apk-signing-public-key.pem | cut -d' ' -f1)"
-          test "$developer_key_sha" = "$stable_key_sha"
-          test "$developer_key_sha" = "$EXPECTED_APK_KEY_SHA256"
+          test "$stable_key_sha" = "$EXPECTED_APK_KEY_SHA256"
 
       - name: Create release from approved artifacts
         env:

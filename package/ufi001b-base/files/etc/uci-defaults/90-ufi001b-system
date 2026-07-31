@@ -25,7 +25,6 @@ net.ipv6.conf.default.disable_ipv6=1
 EOF
 
 /etc/init.d/ufi001b-usb-gadget enable
-/etc/init.d/ufi001b-resize-rootfs enable
 [ ! -x /etc/init.d/zram ] || /etc/init.d/zram enable
 
 exit 0

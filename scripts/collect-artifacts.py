@@ -23,11 +23,9 @@ def sha256(path: Path) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tree", required=True, type=Path)
-    parser.add_argument(
-        "--profile", required=True, choices=("developer-ext4", "stable-squashfs")
-    )
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args()
+    profile = "stable-squashfs"
 
     source = args.tree / "bin/targets/msm89xx/msm8916"
     if not source.is_dir():
@@ -37,7 +35,7 @@ def main() -> None:
             f"refusing to mix a new build with existing artifacts: {args.out}"
         )
     args.out.mkdir(parents=True, exist_ok=True)
-    fs_token = "ext4" if args.profile == "developer-ext4" else "squashfs"
+    fs_token = "squashfs"
     selected: list[Path] = []
     for image_kind in ("boot", "rootfs"):
         matches = list(source.glob(f"*{fs_token}*{image_kind}.img"))
@@ -63,19 +61,18 @@ def main() -> None:
     shutil.copy2(public_key, public_key_artifact)
     copied.append(public_key_artifact)
 
-    if args.profile == "stable-squashfs":
-        package_roots = list((args.tree / "bin/packages").glob("aarch64_cortex-a53*"))
-        for prefix in ("luci-app-openclash-", "mihomo-openclash-"):
-            matches = [
-                path
-                for package_root in package_roots
-                for path in package_root.rglob(f"{prefix}*.apk")
-            ]
-            if len(matches) != 1:
-                raise SystemExit(f"expected one {prefix} APK, found {len(matches)}")
-            destination = args.out / matches[0].name
-            shutil.copy2(matches[0], destination)
-            copied.append(destination)
+    package_roots = list((args.tree / "bin/packages").glob("aarch64_cortex-a53*"))
+    for prefix in ("luci-app-openclash-", "mihomo-openclash-"):
+        matches = [
+            path
+            for package_root in package_roots
+            for path in package_root.rglob(f"{prefix}*.apk")
+        ]
+        if len(matches) != 1:
+            raise SystemExit(f"expected one {prefix} APK, found {len(matches)}")
+        destination = args.out / matches[0].name
+        shutil.copy2(matches[0], destination)
+        copied.append(destination)
 
     packages = []
     for manifest in args.out.glob("*.manifest"):
@@ -98,8 +95,8 @@ def main() -> None:
         "spdxVersion": "SPDX-2.3",
         "dataLicense": "CC0-1.0",
         "SPDXID": "SPDXRef-DOCUMENT",
-        "name": f"ufi001b-openwrt-{args.profile}",
-        "documentNamespace": f"https://spdx.org/spdxdocs/ufi001b-{args.profile}-{manifest_fingerprint}",
+        "name": f"ufi001b-openwrt-{profile}",
+        "documentNamespace": f"https://spdx.org/spdxdocs/ufi001b-{profile}-{manifest_fingerprint}",
         "creationInfo": {"created": created, "creators": ["Tool: ufi001b collect-artifacts.py"]},
         "packages": packages,
     }

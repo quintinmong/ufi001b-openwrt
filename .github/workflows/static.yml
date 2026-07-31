@@ -24,12 +24,12 @@ jobs:
           python3 scripts/verify-locks.py
           python3 scripts/validate-layout.py
           python3 -m py_compile scripts/*.py
+          python3 -m unittest discover -s tests -v
           config=openwrt-overlay/target/linux/msm89xx/config-6.12
           for symbol in \
             CONFIG_BLOCK=y \
             CONFIG_DEVTMPFS=y \
             CONFIG_EFI_PARTITION=y \
-            CONFIG_EXT4_FS=y \
             CONFIG_MMC=y \
             CONFIG_MMC_BLOCK=y \
             CONFIG_MMC_SDHCI=y \
@@ -89,7 +89,7 @@ jobs:
               echo 'stable rootfs must invalidate rootfs_data and remain eMMC-sector aligned' >&2
               exit 1
             }
-          for profile in configs/developer-ext4.config configs/stable-squashfs.config; do
+          for profile in configs/stable-squashfs.config; do
             for symbol in CONFIG_KERNEL_DEVTMPFS=y CONFIG_KERNEL_DEVTMPFS_MOUNT=y; do
               grep -qx "$symbol" "$profile" || {
                 echo "$profile missing OpenWrt kernel override: $symbol" >&2
@@ -146,21 +146,6 @@ jobs:
           check_hash qrtr 0.2 https://github.com/andersson/qrtr.git 9dc7a88548c27983e06465d3fbba2ba27d4bc050
           check_hash rmtfs 0.2 https://github.com/andersson/rmtfs.git b08ef6f98ec567876d7d45f15c85c6ed00d7c463
           check_hash rpmsgexport 2018.02.28 https://github.com/andersson/rpmsgexport.git 324d88d668f36c6a5e6a9c2003a050b8a5a3cd60
-
-      - name: Parse PowerShell HIL tooling without executing it
-        shell: pwsh
-        run: |
-          $tokens = $null
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path 'scripts/flash-developer-hil.ps1'),
-            [ref]$tokens,
-            [ref]$errors
-          ) | Out-Null
-          if ($errors.Count -ne 0) {
-            $errors | Format-List
-            throw 'PowerShell parse failed'
-          }
 
       - name: Reject firmware and dangerous partition artifacts
         run: |

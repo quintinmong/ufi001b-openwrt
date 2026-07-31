@@ -19,7 +19,9 @@ OpenClash LuCI/脚本和 Mihomo 核心可独立安装同一仓库生成并签名
 
 SquashFS 长度改变时，`rootfs_data` loop 的起点也会改变，旧 overlay 不应
 被假定为可复用。正式升级默认按“备份配置、建立干净 overlay、选择性
-恢复”处理。不要把系统级旧文件整包覆盖到新 `/overlay`。
+恢复”处理。stable rootfs 镜像在新偏移处自带 `deadc0de` 初始化标记，完整
+刷入后 `fstools` 会建立干净 F2FS overlay；不要把系统级旧文件整包覆盖到
+新 `/overlay`。
 
 ## 回滚
 
