@@ -16,14 +16,15 @@
 - 删除与最终 Goal 无关的 ext4 开发版构建、发布、验证和刷写入口。
 - 仓库已转为 public；完整 Git 历史未发现密钥、设备标识、备份或 proprietary
   blob，4 个旧开发版 artifact 已从 GitHub 删除；
-- stable run `30609684589`（commit `31a65bf`）成功，artifact `8788269575`
+- stable run `30622797978`（commit `ba90239`）成功，artifact `8794844117`
   已下载并通过离线验证；GitHub Actions 已升级到 Node 24，build annotations 为 0；
 - stable HIL 脚本已固定候选，`LocalCheck` 验证 provenance、备份、GPT、loader、
   boot、SquashFS、F2FS preinit、RNDIS、marker 与哈希后通过；
 - 旧候选已仅写 p14/p12 并完成回读；写前后 GPT、`fsc`、`fsg`、`modemst1`、
   `modemst2` 一致，首次启动已创建可读且容量正确的 F2FS overlay；
-- 首次网络 HIL 暴露 RNDIS gadget 与 netifd 的启动竞态，新候选已等待并拉起
-  `usb0` 后执行 `ifup lan`，等待设备复测。
+- 两轮网络 HIL 均能枚举 RNDIS，但 Windows 报告 media disconnected；只读
+  overlay 分析确认 F2FS ready、S25 服务和 LAN/DHCP 配置正确；新候选在绑定
+  UDC 前拉起 `usb0` 并记录持久链路诊断，等待设备复测。
 
 ## 已解决的构建失败
 
