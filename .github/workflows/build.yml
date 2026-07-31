@@ -18,7 +18,7 @@ jobs:
       JOBS: 3
     steps:
       - name: Check out source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - name: Reclaim runner space for Rust toolchain
         run: |
@@ -65,7 +65,7 @@ jobs:
             python3-pyelftools rsync swig unzip zlib1g-dev file wget curl time xsltproc zstd openssl
 
       - name: Cache immutable downloads
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25
         with:
           path: ${{ env.BUILD_ROOT }}/openwrt/dl
           key: openwrt-dl-${{ hashFiles('locks/sources.lock.json') }}
@@ -101,7 +101,7 @@ jobs:
           test "$actual" = "$EXPECTED_PUBLIC_KEY_SHA256"
 
       - name: Upload allow-listed build outputs
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: ufi001b-stable-squashfs
           path: out/stable-squashfs/
@@ -110,6 +110,6 @@ jobs:
 
       - name: Attest build provenance
         if: github.event_name != 'pull_request' && github.event.repository.visibility == 'public'
-        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373
         with:
           subject-path: out/stable-squashfs/*
