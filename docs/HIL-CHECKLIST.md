@@ -1,7 +1,10 @@
 # UFI001B stable HIL 清单
 
-候选固定为 run `30597258946`、commit `cd67dfe`、artifact `8783573556`；完整
+候选固定为 run `30609684589`、commit `31a65bf`、artifact `8788269575`；完整
 哈希见 [CANDIDATE.md](CANDIDATE.md)。`LocalCheck` 已通过，以下设备项待执行。
+
+旧候选的 p14/p12 写入、回读、GPT 与受保护分区审计均已通过，且首次启动已
+创建 F2FS overlay；但 RNDIS 链路 HIL 失败。本清单状态针对修复后的新候选重置。
 
 ## A. 离线与写前审计
 
