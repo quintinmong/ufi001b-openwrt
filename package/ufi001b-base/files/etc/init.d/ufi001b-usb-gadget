@@ -2,7 +2,7 @@
 
 # rc.common consumes these variables.
 # shellcheck disable=SC2034
-START=15
+START=25
 STOP=89
 
 GADGET=/sys/kernel/config/usb_gadget/ufi001b
@@ -51,6 +51,16 @@ wait_for_udc() {
 	return 1
 }
 
+wait_for_usb0() {
+	tries=0
+	while [ "$tries" -lt 10 ]; do
+		[ -e /sys/class/net/usb0 ] && return 0
+		tries=$((tries + 1))
+		sleep 1
+	done
+	return 1
+}
+
 start() {
 	board_is_ufi001b || return 0
 	modprobe libcomposite || return 1
@@ -90,6 +100,12 @@ start() {
 	ln -s "$GADGET/functions/rndis.usb0" "$GADGET/configs/c.1/rndis.usb0"
 	ln -s "$GADGET/configs/c.1" "$GADGET/os_desc/c.1"
 	printf '%s\n' "$UDC" > "$GADGET/UDC"
+
+	# The RNDIS netdev is created asynchronously. Reconcile it with netifd after
+	# the network service has started so br-lan cannot miss its only port.
+	wait_for_usb0 || return 1
+	ip link set dev usb0 up || return 1
+	ifup lan || return 1
 }
 
 stop() {
