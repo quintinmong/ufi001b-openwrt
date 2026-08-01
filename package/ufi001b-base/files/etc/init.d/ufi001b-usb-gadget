@@ -30,33 +30,35 @@ record_link_state() {
 	done
 }
 
-attach_lan_bridge() {
+configure_direct_lan() {
 	label="$1"
-	restart_lan="$2"
-	if [ "$restart_lan" = 1 ]; then
-		status "$label restarting lan after usb0 creation"
-		ifdown lan >> "$STATUS" 2>&1 || status "$label ifdown lan failed"
-	fi
+	status "$label configuring lan directly on usb0"
+	uci -q set network.lan.device='usb0' || {
+		status "$label set network.lan.device failed"
+		return 1
+	}
+	uci -q commit network || {
+		status "$label commit network failed"
+		return 1
+	}
+	ubus call network reload >> "$STATUS" 2>&1 || {
+		status "$label network reload failed"
+		return 1
+	}
 	ifup lan >> "$STATUS" 2>&1 || status "$label ifup lan failed"
-	tries=0
-	while [ "$tries" -lt 10 ]; do
-		[ -e /sys/class/net/br-lan ] && break
-		tries=$((tries + 1))
-		sleep 1
-	done
-	[ -e /sys/class/net/br-lan ] || {
-		status "$label br-lan unavailable"
-		return 1
-	}
-	ip link set dev usb0 master br-lan >> "$STATUS" 2>&1 || {
-		status "$label attach usb0 to br-lan failed"
-		return 1
-	}
-	ip link set dev br-lan up >> "$STATUS" 2>&1 || status "$label ip link set br-lan up failed"
 	ip link set dev usb0 up >> "$STATUS" 2>&1 || {
 		status "$label ip link set usb0 up failed"
 		return 1
 	}
+	tries=0
+	while [ "$tries" -lt 20 ]; do
+		ip -4 -o addr show dev usb0 2>/dev/null |
+			grep -q ' 192\.168\.1\.1/' && return 0
+		tries=$((tries + 1))
+		sleep 1
+	done
+	status "$label usb0 missing 192.168.1.1 after network reload"
+	return 1
 }
 
 board_is_ufi001b() {
@@ -177,7 +179,8 @@ start() {
 	ln -s "$GADGET/configs/c.1" "$GADGET/os_desc/c.1"
 
 	# MSM8916 creates the RNDIS netdev only after the first UDC bind. Use that
-	# bind to instantiate usb0, prepare the LAN, then rebind so the host sees an
+	# bind to instantiate usb0, configure it as the direct LAN device, then
+	# rebind so the host sees an
 	# already-running netdev during its final RNDIS initialization.
 	printf '%s\n' "$UDC" > "$GADGET/UDC" || {
 		status 'initial UDC bind failed'
@@ -188,7 +191,7 @@ start() {
 		status 'usb0 unavailable after initial UDC bind'
 		return 1
 	}
-	attach_lan_bridge 'initial-bind' 1 || return 1
+	configure_direct_lan 'initial-bind' || return 1
 	record_link_state 'initial-bind'
 	printf '\n' > "$GADGET/UDC" || {
 		status 'UDC unbind failed'
@@ -203,7 +206,8 @@ start() {
 	}
 	status 'final UDC bound'
 	sleep 3
-	attach_lan_bridge 'final-bind' 0 || return 1
+	ifup lan >> "$STATUS" 2>&1 || status 'final-bind ifup lan failed'
+	ip link set dev usb0 up >> "$STATUS" 2>&1 || status 'final-bind ip link set usb0 up failed'
 	record_link_state 'final-bind'
 	(
 		sleep 15

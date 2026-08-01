@@ -80,9 +80,9 @@ jobs:
             'wait_for_usb0' \
             'lan_interface_available' \
             'deferred to late rc link' \
-            'attach_lan_bridge' \
-            'ifdown lan' \
-            'ip link set dev usb0 master br-lan' \
+            'configure_direct_lan' \
+            "network.lan.device='usb0'" \
+            'ubus call network reload' \
             'ip link set dev usb0 up' \
             'ifup lan' \
             'initial-bind' \
@@ -95,6 +95,10 @@ jobs:
               exit 1
             }
           done
+          if grep -Fq 'ip link set dev usb0 master br-lan' "$gadget"; then
+            echo 'UFI001B direct USB LAN must not depend on br-lan' >&2
+            exit 1
+          fi
           if grep -q 'kmod-usb-gadget-serial' openwrt-overlay/target/linux/msm89xx/Makefile; then
             echo 'UFI001B must not install the legacy serial gadget by default' >&2
             exit 1

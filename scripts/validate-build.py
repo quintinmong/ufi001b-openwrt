@@ -224,8 +224,8 @@ def validate_stable_rootfs(
         "compatible_id",
         "5162001",
         "lan interface unavailable; deferred to late rc link",
-        "ifdown lan",
-        "ip link set dev usb0 master br-lan",
+        "network.lan.device='usb0'",
+        "ubus call network reload",
         "delayed-15s",
         "delayed-60s",
     ):
@@ -233,6 +233,8 @@ def validate_stable_rootfs(
             raise SystemExit(f"stable USB gadget script missing {token}")
     if "modprobe g_ether" in gadget:
         raise SystemExit("stable rootfs retained the legacy g_ether startup path")
+    if "ip link set dev usb0 master br-lan" in gadget:
+        raise SystemExit("stable rootfs retained the failed br-lan dependency")
     if "squashfs-root/etc/rc.d/S25ufi001b-usb-gadget" in listing:
         raise SystemExit("stable rootfs retained the early S25 USB gadget link")
 
