@@ -16,16 +16,16 @@
 - 删除与最终 Goal 无关的 ext4 开发版构建、发布、验证和刷写入口。
 - 仓库已转为 public；完整 Git 历史未发现密钥、设备标识、备份或 proprietary
   blob，4 个旧开发版 artifact 已从 GitHub 删除；
-- stable run `30673711516`（commit `065d884`）成功，artifact `8812103488`
+- stable run `30697722579`（commit `e6af8ab`）成功，artifact `8819870142`
   已下载并通过离线验证；GitHub Actions 已升级到 Node 24，build annotations 为 0；
 - stable HIL 脚本已固定候选，`LocalCheck` 验证 provenance、备份、GPT、loader、
   boot、SquashFS、F2FS preinit、RNDIS、marker 与哈希后通过；
 - 旧候选已仅写 p14/p12 并完成回读；写前后 GPT、`fsc`、`fsg`、`modemst1`、
   `modemst2` 一致，首次启动已创建可读且容量正确的 F2FS overlay；
-- pre-bind 诊断证明内核只在首次 UDC 绑定后创建 `usb0`；两阶段绑定曾让
-  Windows RNDIS 达到 426 Mbps carrier。显式入桥候选的只读诊断停在
-  `initial-bind br-lan unavailable`，证明单独 `ifup lan` 不会重建缺失 bridge；
-  当前候选改为 `usb0` 创建后强制 `ifdown lan`/`ifup lan`，再入桥和最终重绑。
+- pre-bind 诊断证明内核只在首次 UDC 绑定后创建 `usb0`；后续诊断证明 S25 时
+  netifd 仍未注册 LAN，重启 LAN 会返回 `Interface lan not found`。当前候选
+  把实际配置延后至 S90，旧 Overlay 的 S25 调用会自动 defer；artifact 已验证
+  只含新的 S90 链接。
 
 ## 已解决的构建失败
 
@@ -35,13 +35,12 @@ stable run `30554242007`（commit `61beb7f`）在 Rust 1.94 host LLVM 的
 
 ## 待完成
 
-1. 用户针对 [CANDIDATE.md](CANDIDATE.md) 的新 rootfs 精确哈希明确授权；
-2. 重新确认设备处于 9008、GPT 和受保护分区仍匹配基线；
-3. 仅写 p14、回读验证，再写配套 p12、回读验证；
-4. 正常重插、冷启动并完成 OverlayFS、网络、Wi-Fi、SIM 和基带 HIL；
-5. 再次审计 GPT 与受保护分区，更新最终状态。
+1. 重新确认设备处于 9008、GPT 和受保护分区仍匹配基线；
+2. 仅写 p14、回读验证，再写配套 p12、回读验证；
+3. 正常重插、冷启动并完成 OverlayFS、网络、Wi-Fi、SIM 和基带 HIL；
+4. 再次审计 GPT 与受保护分区，更新最终状态。
 
-新候选尚未获得写入授权，禁止写入。OpenClash 运行测试不属于当前 Goal。
+新候选已获得仅写 p14/p12 的明确授权。OpenClash 运行测试不属于当前 Goal。
 
 历史 run `30541982297` / artifact `8762389406` 的 ext4 镜像仅保留为设备恢复
 依据，不再属于源码构建、CI、Release 或正常刷写流程。
