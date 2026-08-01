@@ -172,6 +172,7 @@ def validate_stable_rootfs(
     required_paths = (
         "squashfs-root/etc/init.d/openclash",
         "squashfs-root/etc/init.d/ufi001b-usb-gadget",
+        "squashfs-root/etc/rc.d/S90ufi001b-usb-gadget",
         "squashfs-root/etc/init.d/zram",
         "squashfs-root/etc/modules-boot.d/30-fs-f2fs",
         "squashfs-root/etc/openclash/core/clash_meta",
@@ -215,12 +216,14 @@ def validate_stable_rootfs(
         )
     )
     for token in (
+        "START=90",
         "functions/rndis.usb0",
         "os_desc/use",
         "os_desc/b_vendor_code",
         "MSFT100",
         "compatible_id",
         "5162001",
+        "lan interface unavailable; deferred to late rc link",
         "ifdown lan",
         "ip link set dev usb0 master br-lan",
         "delayed-15s",
@@ -230,6 +233,8 @@ def validate_stable_rootfs(
             raise SystemExit(f"stable USB gadget script missing {token}")
     if "modprobe g_ether" in gadget:
         raise SystemExit("stable rootfs retained the legacy g_ether startup path")
+    if "squashfs-root/etc/rc.d/S25ufi001b-usb-gadget" in listing:
+        raise SystemExit("stable rootfs retained the early S25 USB gadget link")
 
     defaults = run_text(
         (

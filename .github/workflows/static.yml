@@ -69,6 +69,7 @@ jobs:
           done
           gadget=package/ufi001b-base/files/etc/init.d/ufi001b-usb-gadget
           for token in \
+            'START=90' \
             'functions/rndis.usb0' \
             'os_desc/use' \
             'os_desc/b_vendor_code' \
@@ -77,6 +78,8 @@ jobs:
             '5162001' \
             'modprobe usb_f_rndis' \
             'wait_for_usb0' \
+            'lan_interface_available' \
+            'deferred to late rc link' \
             'attach_lan_bridge' \
             'ifdown lan' \
             'ip link set dev usb0 master br-lan' \

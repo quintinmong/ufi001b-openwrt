@@ -2,7 +2,7 @@
 
 # rc.common consumes these variables.
 # shellcheck disable=SC2034
-START=25
+START=90
 STOP=89
 
 GADGET=/sys/kernel/config/usb_gadget/ufi001b
@@ -113,10 +113,21 @@ wait_for_usb0() {
 	return 1
 }
 
+lan_interface_available() {
+	ubus -t 2 call network.interface.lan status >/dev/null 2>&1
+}
+
 start() {
 	: > "$STATUS"
 	status 'start'
 	board_is_ufi001b || return 0
+	# An older overlay may retain the former S25 enable link. Leave that early
+	# invocation cleanly so the S90 link from the current SquashFS can retry
+	# after netifd has registered the LAN interface.
+	lan_interface_available || {
+		status 'lan interface unavailable; deferred to late rc link'
+		return 0
+	}
 	modprobe libcomposite || {
 		status 'modprobe libcomposite failed'
 		return 1
