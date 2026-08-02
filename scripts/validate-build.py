@@ -38,6 +38,7 @@ REQUIRED_KERNEL_CONFIG = (
     "CONFIG_QCOM_BAM_DMUX=m",
     "CONFIG_QCOM_Q6V5_MSS=m",
     "CONFIG_QCOM_WCNSS_PIL=m",
+    "CONFIG_RPMSG_WWAN_CTRL=m",
     "CONFIG_WCN36XX=m",
     "CONFIG_TUN=m",
     "CONFIG_NFT_TPROXY=m",
@@ -171,6 +172,8 @@ def validate_stable_rootfs(
     listing = run_text((str(unsquashfs), "-ll", str(rootfs)))
     required_paths = (
         "squashfs-root/etc/init.d/openclash",
+        "squashfs-root/etc/init.d/rmtfs",
+        "squashfs-root/etc/hotplug.d/rpmsg/55-rpmsgexport",
         "squashfs-root/etc/init.d/ufi001b-usb-gadget",
         "squashfs-root/etc/rc.d/S90ufi001b-usb-gadget",
         "squashfs-root/etc/init.d/zram",
@@ -195,6 +198,12 @@ def validate_stable_rootfs(
         r"squashfs-root/lib/modules/[^/\s]+/f2fs\.ko$", listing, re.MULTILINE
     ):
         raise SystemExit("SquashFS is missing the F2FS kernel module")
+    if not re.search(
+        r"squashfs-root/lib/modules/[^/\s]+/rpmsg_wwan_ctrl\.ko$",
+        listing,
+        re.MULTILINE,
+    ):
+        raise SystemExit("SquashFS is missing the RPMSG WWAN control module")
 
     boot_modules = run_text(
         (
@@ -238,6 +247,35 @@ def validate_stable_rootfs(
         raise SystemExit("stable rootfs retained the failed br-lan dependency")
     if "squashfs-root/etc/rc.d/S25ufi001b-usb-gadget" in listing:
         raise SystemExit("stable rootfs retained the early S25 USB gadget link")
+
+    rmtfs = run_text(
+        (
+            str(unsquashfs),
+            "-cat",
+            str(rootfs),
+            "etc/init.d/rmtfs",
+        )
+    )
+    for token in (
+        "PARTNAME=",
+        "/dev/disk/by-partlabel",
+        "modemst1|modemst2|fsc|fsg",
+        "required modem EFS partition links are unavailable",
+    ):
+        if token not in rmtfs:
+            raise SystemExit(f"stable rmtfs init missing {token}")
+
+    rpmsg_hotplug = run_text(
+        (
+            str(unsquashfs),
+            "-cat",
+            str(rootfs),
+            "etc/hotplug.d/rpmsg/55-rpmsgexport",
+        )
+    )
+    for token in ('devname="${DEVNAME:-${DEVPATH##*/}}"', "/dev/$devname"):
+        if token not in rpmsg_hotplug:
+            raise SystemExit(f"stable rpmsg hotplug script missing {token}")
 
     defaults = run_text(
         (

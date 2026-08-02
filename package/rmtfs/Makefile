@@ -4,7 +4,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=rmtfs
 PKG_VERSION:=0.2
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/andersson/rmtfs.git
 PKG_SOURCE_VERSION:=b08ef6f98ec567876d7d45f15c85c6ed00d7c463

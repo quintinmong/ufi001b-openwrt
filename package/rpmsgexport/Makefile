@@ -4,7 +4,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=rpmsgexport
 PKG_VERSION:=2018.02.28
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/andersson/rpmsgexport.git
 PKG_SOURCE_VERSION:=324d88d668f36c6a5e6a9c2003a050b8a5a3cd60

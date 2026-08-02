@@ -33,4 +33,6 @@ RX/TX。artifact 只含 `S90` 链接，GitHub build job 成功且没有 annotati
 carrier 与 RX 已恢复，但运行时地址被配置成 `192.168.1.1/32`，导致没有到
 Windows 端的直连返回路由。本候选在运行时迁移和首次启动默认配置中都显式
 设置 `network.lan.netmask='255.255.255.0'`；Wi-Fi 将作为独立网络验证。尚待
-用户针对本表精确候选授权后执行写前审计和 p14/p12 写入。
+本候选已完成写前审计、p14/p12 写入和逐镜像回读。OverlayFS、RNDIS、DHCP、
+LuCI 与 SSH 已通过；HIL 进一步发现 rmtfs 分区链接和 RPMSG WWAN 模块打包
+缺口，源码已修复，待下一次 Actions 产物取代本候选。

@@ -30,7 +30,8 @@ define KernelPackage/qcom-msm8916-remoteproc
 	CONFIG_QCOM_Q6V5_MSS \
 	CONFIG_QCOM_WCNSS_PIL \
 	CONFIG_QCOM_WCNSS_CTRL \
-	CONFIG_QCOM_BAM_DMUX
+	CONFIG_QCOM_BAM_DMUX \
+	CONFIG_RPMSG_WWAN_CTRL=m
   FILES:= \
 	$(LINUX_DIR)/drivers/soc/qcom/mdt_loader.ko \
 	$(LINUX_DIR)/drivers/soc/qcom/wcnss_ctrl.ko \
@@ -39,8 +40,9 @@ define KernelPackage/qcom-msm8916-remoteproc
 	$(LINUX_DIR)/drivers/remoteproc/qcom_q6v5.ko \
 	$(LINUX_DIR)/drivers/remoteproc/qcom_q6v5_mss.ko \
 	$(LINUX_DIR)/drivers/remoteproc/qcom_wcnss_pil.ko \
-	$(LINUX_DIR)/drivers/net/wwan/qcom_bam_dmux.ko
-  AUTOLOAD:=$(call AutoProbe,mdt_loader qcom_pil_info qcom_common qcom_q6v5 wcnss_ctrl qcom_wcnss_pil qcom_q6v5_mss qcom_bam_dmux)
+	$(LINUX_DIR)/drivers/net/wwan/qcom_bam_dmux.ko \
+	$(LINUX_DIR)/drivers/net/wwan/rpmsg_wwan_ctrl.ko
+  AUTOLOAD:=$(call AutoProbe,mdt_loader qcom_pil_info qcom_common qcom_q6v5 wcnss_ctrl rpmsg_wwan_ctrl qcom_wcnss_pil qcom_q6v5_mss qcom_bam_dmux)
 endef
 
 define KernelPackage/qcom-msm8916-remoteproc/description

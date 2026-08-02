@@ -20,7 +20,32 @@ prepare_uio_link() {
 	return 1
 }
 
+prepare_partition_links() {
+	# rmtfs resolves the modem EFS paths through /dev/disk/by-partlabel,
+	# while OpenWrt's default device manager does not create those links.
+	# BusyBox ash supports function-local variables.
+	# shellcheck disable=SC3043
+	local node name
+	mkdir -p /dev/disk/by-partlabel
+	for node in /sys/class/block/mmcblk0p*; do
+		[ -r "$node/uevent" ] || continue
+		name="$(sed -n 's/^PARTNAME=//p' "$node/uevent")"
+		case "$name" in
+			modemst1|modemst2|fsc|fsg)
+				ln -snf "/dev/${node##*/}" "/dev/disk/by-partlabel/$name"
+				;;
+		esac
+	done
+	for name in modemst1 modemst2 fsc fsg; do
+		[ -b "/dev/disk/by-partlabel/$name" ] || return 1
+	done
+}
+
 start_service() {
+	prepare_partition_links || {
+		logger -t rmtfs "required modem EFS partition links are unavailable"
+		return 1
+	}
 	prepare_uio_link || logger -t rmtfs "rmtfs UIO device is not present yet"
 	procd_open_instance
 	procd_set_param command /usr/bin/rmtfs -P -r -s

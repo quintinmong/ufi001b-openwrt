@@ -27,6 +27,18 @@
   上一候选让管理 LAN 直接绑定 `usb0`，执行 network reload 后最终重绑；旧
   Overlay 的 S25 调用仍会自动 defer。RNDIS carrier 与 RX 已恢复，但 LAN
   地址为错误的 `192.168.1.1/32`；当前候选在两个配置入口显式补齐 `/24`。
+- run `30728461724` 已仅写 p14/p12 并完成回读；`192.168.1.1/24`、RNDIS
+  426 Mbps、DHCP、LuCI、SSH 均通过，Windows 已恢复 DHCP；`/rom` 为只读
+  SquashFS，`/overlay` 为约 3.3 GiB F2FS，`/` 为 OverlayFS，持久化标记跨
+  正常重启保留；
+- 从本地 HandsomeMod UFI001B 镜像提取私有固件到设备 overlay 后，WCNSS
+  `phy0` 和 2.4 GHz AP 能力已出现；私有文件未进入 Git 或公开 artifact；
+- 实机发现 rmtfs 缺少 `/dev/disk/by-partlabel` 导致 MPSS EFS 崩溃；创建与
+  GPT PARTNAME 一致的 p7-p10 映射后 remoteproc0 稳定运行并生成
+  `wwan0`-`wwan7`。同时发现 `CONFIG_RPMSG_WWAN_CTRL=m` 的模块未被打包，
+  导致 ModemManager 缺少 QMI 控制口。源码已补齐 EFS 映射、
+  `rpmsg_wwan_ctrl.ko` 打包/自动加载和 rpmsg hotplug 的 DEVNAME fallback，
+  并加入构建期强制验证。
 
 ## 已解决的构建失败
 
@@ -36,13 +48,13 @@ stable run `30554242007`（commit `61beb7f`）在 Rust 1.94 host LLVM 的
 
 ## 待完成
 
-1. 重新确认设备处于 9008、GPT 和受保护分区仍匹配基线；
-2. 仅写 p14、回读验证，再写配套 p12、回读验证；
-3. 正常重插、冷启动并完成 OverlayFS、网络、Wi-Fi、SIM 和基带 HIL；
-4. 再次审计 GPT 与受保护分区，更新最终状态。
+1. 构建并固定包含 EFS/rpmsg WWAN 修复的新 stable 候选；
+2. 仅写新候选 p14/p12 并回读验证，重新安装仅本地持有的私有固件；
+3. 完成 Wi-Fi 关联/获址、ModemManager、SIM 和移动数据 HIL；
+4. 再次审计 GPT 与受保护分区，完成冷启动和断电持久化验收。
 
-新候选尚待针对精确 run 的仅写 p14/p12 授权。OpenClash 运行测试不属于当前
-Goal。
+下一候选尚待 Actions 构建、固定和针对精确 run 的仅写 p14/p12 授权。
+OpenClash 运行测试不属于当前 Goal。
 
 历史 run `30541982297` / artifact `8762389406` 的 ext4 镜像仅保留为设备恢复
 依据，不再属于源码构建、CI、Release 或正常刷写流程。
