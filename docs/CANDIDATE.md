@@ -1,18 +1,18 @@
 # 当前 stable 候选
 
-构建与下载时间：2026-07-31。
+构建与下载时间：2026-08-02。
 
 | 字段 | 值 |
 | --- | --- |
-| Actions run | `30705979030` |
-| Commit | `3953aeac23605e7d11bd82027465ef47aca92f58` |
+| Actions run | `30728461724` |
+| Commit | `c69ca33b20ab87fbe0b0efaa09d2c6d6df96d013` |
 | Artifact | `ufi001b-stable-squashfs` |
-| Artifact ID | `8822507318` |
-| Artifact bytes | `61,061,677` |
+| Artifact ID | `8828953097` |
+| Artifact bytes | `61,061,630` |
 | boot bytes | `6,113,280` |
 | boot SHA-256 | `a8daf147af8683d1906b7ab5f8bcc315c1b555ca3b48502d10e57209da435545` |
 | rootfs bytes | `31,195,648` |
-| rootfs SHA-256 | `43fd868e772cabeffe99381841d6caf922a3326c7312a10ffa060cf550aee93f` |
+| rootfs SHA-256 | `3e1db1860c4e4fe0078b59b2575d41c4f3bc0e26196931e2ef9f00f9bf2ffae7` |
 | SquashFS bytes_used | `30,963,414` |
 | rootfs_data offset | `30,998,528` |
 | p14 overlay capacity | `3,506,880,000` bytes |
@@ -29,7 +29,8 @@ OpenClash/Mihomo、`deadc0de` 和 overlay 容量。
 reload 后最终重绑 UDC。启动阶段会立即及延迟 15/60 秒记录 IPv4、carrier 和
 RX/TX。artifact 只含 `S90` 链接，GitHub build job 成功且没有 annotation。
 
-上一候选已完成 p14/p12 写入和回读哈希。S90 诊断证明 netifd 已注册 LAN，
-但仍不会为运行时才出现的 USB port 实例化 `br-lan`。当前候选因此让管理 LAN
-直接绑定 `usb0`，不再依赖单端口 bridge；Wi-Fi 将作为独立网络验证。用户已
-授权仅写本表候选的 p14/p12，待写前审计。
+上一候选已完成 p14/p12 写入和回读哈希。管理 LAN 直接绑定 `usb0` 后，RNDIS
+carrier 与 RX 已恢复，但运行时地址被配置成 `192.168.1.1/32`，导致没有到
+Windows 端的直连返回路由。本候选在运行时迁移和首次启动默认配置中都显式
+设置 `network.lan.netmask='255.255.255.0'`；Wi-Fi 将作为独立网络验证。尚待
+用户针对本表精确候选授权后执行写前审计和 p14/p12 写入。

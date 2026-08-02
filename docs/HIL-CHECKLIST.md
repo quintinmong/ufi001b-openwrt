@@ -1,11 +1,12 @@
 # UFI001B stable HIL 清单
 
-候选固定为 run `30705979030`、commit `3953aea`、artifact `8822507318`；完整
+候选固定为 run `30728461724`、commit `c69ca33`、artifact `8828953097`；完整
 哈希见 [CANDIDATE.md](CANDIDATE.md)。`LocalCheck` 已通过，以下设备项待执行。
 
 上一候选的 p14/p12 写入、回读、GPT 与写前受保护分区审计均已通过，且首次
-启动已创建 F2FS overlay；S90 诊断证明动态 USB port 仍不能生成 `br-lan`。
-当前候选把管理 LAN 直接迁移到 `usb0`，并保留 S90 与旧 S25 defer 兼容。
+启动已创建 F2FS overlay。管理 LAN 直接迁移到 `usb0` 后，诊断发现其地址为
+`192.168.1.1/32`。当前候选显式补齐 `/24` netmask，并保留 S90 与旧 S25
+defer 兼容。
 
 ## A. 离线与写前审计
 
@@ -13,7 +14,7 @@
 - [x] boot、DTB、IKCONFIG、SquashFS、`deadc0de`、F2FS 模块链全部通过；
 - [x] loader、备份 GPT 和完整备份摘要与基线一致；
 - [ ] 实机 PCB、当前 GPT 和受保护分区摘要与基线一致；
-- [x] 用户针对精确候选明确授权仅写 p14/p12。
+- [ ] 用户针对精确候选明确授权仅写 p14/p12。
 
 ## B. 写入与回读
 
