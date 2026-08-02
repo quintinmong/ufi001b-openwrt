@@ -39,6 +39,8 @@ QMI/AT 模块与 rpmsg hotplug fallback。
 - [x] Wi-Fi 可设置密码、关联、获取地址并访问网络；
 - [x] SIM 可识别，modem/QRTR/BAM-DMUX 正常，移动数据可建立；
 - [x] 时区为 `Asia/Shanghai`，IPv6 默认禁用；
+- [x] 运行阶段红/绿 LED 关闭，蓝 LED 以 1.5 秒亮、0.3 秒灭的内核 timer
+  心跳显示，实物观察通过且不使用后台轮询；
 - [ ] 多次冷启动后功能一致，受保护分区最终审计无变化。
 
 OpenClash 安装和透明代理运行测试不属于当前 Goal，不阻塞 A-D 验收。

@@ -60,6 +60,10 @@
   后安装 LuCI base、防火墙和包管理器简体中文翻译，默认语言 `zh_cn` 已跨
   软件重启保留；USB DHCP 暂不下发网关/DNS，避免未选择棒子上网的电脑被
   RNDIS 抢走默认路由。
+- LED sysfs 确认为同一板级 RGB 灯的 `red:power`、`green:wan` 和
+  `blue:wlan`。WCNSS/WWAN 驱动不提供可用 netdev 字节计数或 LED 活动事件，
+  因而流量 trigger 只能常亮；运行时改为红/绿关闭、蓝色由内核 timer 按
+  1.5 秒亮/0.3 秒灭显示系统心跳，实物闪烁验收通过，无后台轮询进程。
 
 ## 已解决的构建失败
 
