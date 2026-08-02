@@ -225,6 +225,7 @@ def validate_stable_rootfs(
         "5162001",
         "lan interface unavailable; deferred to late rc link",
         "network.lan.device='usb0'",
+        "network.lan.netmask='255.255.255.0'",
         "ubus call network reload",
         "delayed-15s",
         "delayed-60s",
@@ -249,6 +250,7 @@ def validate_stable_rootfs(
     for expected in (
         "zram_size_mb='96'",
         "zram_comp_algo='lzo-rle'",
+        "network.lan.netmask='255.255.255.0'",
         "/etc/init.d/zram enable",
     ):
         if expected not in defaults:

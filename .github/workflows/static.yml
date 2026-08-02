@@ -82,6 +82,7 @@ jobs:
             'deferred to late rc link' \
             'configure_direct_lan' \
             "network.lan.device='usb0'" \
+            "network.lan.netmask='255.255.255.0'" \
             'ubus call network reload' \
             'ip link set dev usb0 up' \
             'ifup lan' \

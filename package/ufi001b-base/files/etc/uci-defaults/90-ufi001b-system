@@ -13,6 +13,7 @@ set system.@system[0].timezone='CST-8'
 set system.@system[0].zram_size_mb='96'
 set system.@system[0].zram_comp_algo='lzo-rle'
 set network.lan.ipaddr='192.168.1.1'
+set network.lan.netmask='255.255.255.0'
 set network.lan.ip6assign='0'
 delete network.globals.ula_prefix
 commit system

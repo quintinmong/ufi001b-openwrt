@@ -37,6 +37,10 @@ configure_direct_lan() {
 		status "$label set network.lan.device failed"
 		return 1
 	}
+	uci -q set network.lan.netmask='255.255.255.0' || {
+		status "$label set network.lan.netmask failed"
+		return 1
+	}
 	uci -q commit network || {
 		status "$label commit network failed"
 		return 1
