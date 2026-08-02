@@ -38,5 +38,5 @@ Windows 端的直连返回路由。本候选在运行时迁移和首次启动默
 LuCI 与 SSH 均通过。rmtfs 分区链接、`rpmsg_wwan_ctrl.ko` 自动加载和 rpmsg
 hotplug fallback 已在实机生效；恢复仅本地持有的私有运行时固件后，MPSS、
 WCNSS、QMI、ModemManager Modem3gpp 和 SIM LTE 注册均通过。Wi-Fi AP 已被
-Windows 扫描到，尚待客户端关联/获址；移动数据、断电复验和最终受保护分区
-审计仍待完成。
+Windows 扫描到并完成客户端关联、DHCP、LuCI 和公网验证；`ctnet` IPv4
+bearer、DNS 与 NAT 均已通过。断电复验和最终受保护分区审计仍待完成。

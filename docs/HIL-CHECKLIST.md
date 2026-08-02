@@ -36,8 +36,8 @@ QMI/AT 模块与 rpmsg hotplug fallback。
 
 - [x] Windows RNDIS 枚举稳定；
 - [x] DHCP、`192.168.1.1`、LuCI 和 SSH 可用；
-- [ ] Wi-Fi 可设置密码、关联、获取地址并访问网络；
-- [ ] SIM 可识别，modem/QRTR/BAM-DMUX 正常，移动数据可建立；
+- [x] Wi-Fi 可设置密码、关联、获取地址并访问网络；
+- [x] SIM 可识别，modem/QRTR/BAM-DMUX 正常，移动数据可建立；
 - [x] 时区为 `Asia/Shanghai`，IPv6 默认禁用；
 - [ ] 多次冷启动后功能一致，受保护分区最终审计无变化。
 

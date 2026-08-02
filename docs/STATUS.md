@@ -51,6 +51,15 @@
   modem 按 ModemManager 默认行为回到 disabled；
 - `UFI001B-OpenWrt` 2.4 GHz WPA2 AP 已启动并被 Windows 扫描到，地址为
   `192.168.2.1/24`；东八区、IPv6 禁用和 overlay 标记均跨软件重启保留。
+- Wi-Fi 客户端已实际关联并取得 `192.168.2.0/24` DHCP 租约；客户端可访问
+  LuCI 和公网。`ctnet` IPv4 bearer 开机自动建立，modem 为 LTE connected、
+  SIM 注册 home、packet service attached，dnsmasq 解析和 WAN NAT 均通过；
+- 运行时发现自定义 `aarch64_cortex-a53_neon` feed 名称在官方 25.12 软件源
+  不存在；设备 overlay 已备份原配置，将六条官方通用 feed 修正为
+  `aarch64_cortex-a53`，禁用不存在的自定义 target/OpenClash feed。索引验签
+  后安装 LuCI base、防火墙和包管理器简体中文翻译，默认语言 `zh_cn` 已跨
+  软件重启保留；USB DHCP 暂不下发网关/DNS，避免未选择棒子上网的电脑被
+  RNDIS 抢走默认路由。
 
 ## 已解决的构建失败
 
@@ -60,9 +69,9 @@ stable run `30554242007`（commit `61beb7f`）在 Rust 1.94 host LLVM 的
 
 ## 待完成
 
-1. 完成 Wi-Fi 客户端关联、DHCP 获址和管理页访问；
-2. 配置蜂窝 bearer/APN 后完成移动数据 HIL；
-3. 完成断电持久化复验，并再次审计 GPT 与受保护分区。
+1. 完成最终断电持久化复验；
+2. 再次审计 GPT 与受保护分区；
+3. 将运行时发现的软件源架构修正纳入后续构建，避免恢复出厂后丢失。
 
 新候选已完成 Actions 构建、离线验证、授权写入、回读和首轮实机 HIL。
 OpenClash 运行测试不属于当前 Goal。
