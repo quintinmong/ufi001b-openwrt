@@ -16,7 +16,7 @@
 - 删除与最终 Goal 无关的 ext4 开发版构建、发布、验证和刷写入口。
 - 仓库已转为 public；完整 Git 历史未发现密钥、设备标识、备份或 proprietary
   blob，4 个旧开发版 artifact 已从 GitHub 删除；
-- stable run `30728461724`（commit `c69ca33`）成功，artifact `8828953097`
+- stable run `30744657848`（commit `5285456`）成功，artifact `8834512936`
   已下载并通过离线验证；GitHub Actions 已升级到 Node 24，build annotations 为 0；
 - stable HIL 脚本已固定候选，`LocalCheck` 验证 provenance、备份、GPT、loader、
   boot、SquashFS、F2FS preinit、RNDIS、marker 与哈希后通过；
@@ -48,12 +48,11 @@ stable run `30554242007`（commit `61beb7f`）在 Rust 1.94 host LLVM 的
 
 ## 待完成
 
-1. 构建并固定包含 EFS/rpmsg WWAN 修复的新 stable 候选；
-2. 仅写新候选 p14/p12 并回读验证，重新安装仅本地持有的私有固件；
-3. 完成 Wi-Fi 关联/获址、ModemManager、SIM 和移动数据 HIL；
-4. 再次审计 GPT 与受保护分区，完成冷启动和断电持久化验收。
+1. 仅写新候选 p14/p12 并回读验证，重新安装仅本地持有的私有固件；
+2. 完成 Wi-Fi 关联/获址、ModemManager、SIM 和移动数据 HIL；
+3. 再次审计 GPT 与受保护分区，完成冷启动和断电持久化验收。
 
-下一候选尚待 Actions 构建、固定和针对精确 run 的仅写 p14/p12 授权。
+新候选已完成 Actions 构建、离线验证和固定，用户已授权仅写其 p14/p12。
 OpenClash 运行测试不属于当前 Goal。
 
 历史 run `30541982297` / artifact `8762389406` 的 ext4 镜像仅保留为设备恢复

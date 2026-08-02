@@ -4,16 +4,16 @@
 
 | 字段 | 值 |
 | --- | --- |
-| Actions run | `30728461724` |
-| Commit | `c69ca33b20ab87fbe0b0efaa09d2c6d6df96d013` |
+| Actions run | `30744657848` |
+| Commit | `5285456eafb96f48e2ba7fe97f6dfbe23d3e3358` |
 | Artifact | `ufi001b-stable-squashfs` |
-| Artifact ID | `8828953097` |
-| Artifact bytes | `61,061,630` |
+| Artifact ID | `8834512936` |
+| Artifact bytes | `61,062,754` |
 | boot bytes | `6,113,280` |
 | boot SHA-256 | `a8daf147af8683d1906b7ab5f8bcc315c1b555ca3b48502d10e57209da435545` |
 | rootfs bytes | `31,195,648` |
-| rootfs SHA-256 | `3e1db1860c4e4fe0078b59b2575d41c4f3bc0e26196931e2ef9f00f9bf2ffae7` |
-| SquashFS bytes_used | `30,963,414` |
+| rootfs SHA-256 | `8634ce3a195a5f157d9baee714c3f005cfd338b7ad334104f963519a4e30819d` |
+| SquashFS bytes_used | `30,964,574` |
 | rootfs_data offset | `30,998,528` |
 | p14 overlay capacity | `3,506,880,000` bytes |
 | APK public-key SHA-256 | `cdca512810c06a6136ca81998d9d2ce1416b72d30fec67dee81fbb34c9447ecb` |
@@ -33,6 +33,7 @@ RX/TX。artifact 只含 `S90` 链接，GitHub build job 成功且没有 annotati
 carrier 与 RX 已恢复，但运行时地址被配置成 `192.168.1.1/32`，导致没有到
 Windows 端的直连返回路由。本候选在运行时迁移和首次启动默认配置中都显式
 设置 `network.lan.netmask='255.255.255.0'`；Wi-Fi 将作为独立网络验证。尚待
-本候选已完成写前审计、p14/p12 写入和逐镜像回读。OverlayFS、RNDIS、DHCP、
-LuCI 与 SSH 已通过；HIL 进一步发现 rmtfs 分区链接和 RPMSG WWAN 模块打包
-缺口，源码已修复，待下一次 Actions 产物取代本候选。
+上一候选已完成写前审计、p14/p12 写入和逐镜像回读，OverlayFS、RNDIS、
+DHCP、LuCI 与 SSH 已通过。当前候选补齐 rmtfs 分区链接、
+`rpmsg_wwan_ctrl.ko` 打包/自动加载和 rpmsg hotplug fallback；artifact 已通过
+完整离线验证，用户已针对本次构建授权仅写 p14/p12，待实机写前审计。

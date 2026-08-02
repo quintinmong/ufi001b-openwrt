@@ -12,7 +12,7 @@ Set-StrictMode -Version Latest
 $repoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $workspaceRoot = Split-Path -Parent $repoRoot
 $deviceRoot = Join-Path $workspaceRoot 'UFI001B_410wifi'
-$candidateRunRoot = Join-Path $repoRoot 'out\actions\30728461724-overlay'
+$candidateRunRoot = Join-Path $repoRoot 'out\actions\30744657848-overlay-retry'
 $candidateRoot = Join-Path $candidateRunRoot 'ufi001b-stable-squashfs'
 $candidateMetadata = Join-Path $candidateRunRoot 'run-metadata.json'
 $emmcdl = Join-Path $workspaceRoot 'tools\emmcdl\Qualcomm Premium Tool V2.4\emmcdl.exe'
@@ -31,11 +31,11 @@ $rootfs = $rootfsMatches[0].FullName
 
 $expected = [ordered]@{
     Repository = 'quintinmong/ufi001b-openwrt'
-    RunId = 30728461724L
-    HeadSha = 'C69CA33B20AB87FBE0B0EFAA09D2C6D6DF96D013'
-    ArtifactId = 8828953097L
+    RunId = 30744657848L
+    HeadSha = '5285456EAFB96F48E2BA7FE97F6DFBE23D3E3358'
+    ArtifactId = 8834512936L
     ArtifactName = 'ufi001b-stable-squashfs'
-    ArtifactBytes = 61061630L
+    ArtifactBytes = 61062754L
     EmmcdlSha256 = '24540D815142A3D63C4BF4A01FD4DB0C0AEFB26794749D65480CE0A9F2BC83BB'
     LoaderSha256 = '959439AA5864685999B713C3ED12AD5FA408149648B670A9A9EF77BCC9DCAB14'
     BackupBytes = 3875520000L
@@ -50,8 +50,8 @@ $expected = [ordered]@{
     RootfsLastLba = 7569374L
     RootfsBytes = 3537878528L
     RootfsImageBytes = 31195648L
-    RootfsSha256 = '3E1DB1860C4E4FE0078B59B2575D41C4F3BC0E26196931E2EF9F00F9BF2FFAE7'
-    SquashfsBytes = 30963414L
+    RootfsSha256 = '8634CE3A195A5F157D9BAEE714C3F005CFD338B7AD334104F963519A4E30819D'
+    SquashfsBytes = 30964574L
     RootfsDataOffset = 30998528L
     OverlayBytes = 3506880000L
 }
