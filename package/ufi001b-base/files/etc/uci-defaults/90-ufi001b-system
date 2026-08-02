@@ -12,6 +12,24 @@ set system.@system[0].zonename='Asia/Shanghai'
 set system.@system[0].timezone='CST-8'
 set system.@system[0].zram_size_mb='96'
 set system.@system[0].zram_comp_algo='lzo-rle'
+delete system.ufi001b_red_system
+set system.ufi001b_red_system='led'
+set system.ufi001b_red_system.name='Red: system heartbeat'
+set system.ufi001b_red_system.sysfs='red:power'
+set system.ufi001b_red_system.trigger='heartbeat'
+set system.ufi001b_red_system.default='0'
+delete system.ufi001b_blue_wifi
+set system.ufi001b_blue_wifi='led'
+set system.ufi001b_blue_wifi.name='Blue: Wi-Fi transmit'
+set system.ufi001b_blue_wifi.sysfs='blue:wlan'
+set system.ufi001b_blue_wifi.trigger='phy0tx'
+set system.ufi001b_blue_wifi.default='0'
+delete system.ufi001b_green_unused
+set system.ufi001b_green_unused='led'
+set system.ufi001b_green_unused.name='Green: unused channel'
+set system.ufi001b_green_unused.sysfs='green:wan'
+set system.ufi001b_green_unused.trigger='none'
+set system.ufi001b_green_unused.default='0'
 set network.lan.ipaddr='192.168.1.1'
 set network.lan.netmask='255.255.255.0'
 set network.lan.ip6assign='0'
@@ -19,6 +37,9 @@ delete network.globals.ula_prefix
 commit system
 commit network
 EOF
+
+uci -q set luci.main.lang='zh_cn'
+uci -q commit luci
 
 cat > /etc/sysctl.d/90-ufi001b-ipv6.conf <<'EOF'
 net.ipv6.conf.all.disable_ipv6=1

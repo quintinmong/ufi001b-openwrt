@@ -29,8 +29,12 @@ runner host，减少无关后端造成的磁盘与链接开销。
 - rootfs 为可读取的 SquashFS，镜像按 512 字节对齐；
 - `rootfs_data` 对齐点包含大端 `deadc0de`，p14 至少留下 2 GiB；
 - F2FS preinit 模块链、`mount_root`、RNDIS 脚本和必需包实际存在；
+- LuCI 简体中文包、默认 `zh_cn`、官方 `aarch64_cortex-a53` 六个共享源、
+  禁用的 msm89xx/OpenClash 无效源和 LED/xt_LED 能力实际位于 ROM；
+- board/UCI 默认不创建 WAN，不含 APN、运营商、SIM PIN 或自动拨号配置；
 - Mihomo 是 AArch64 ELF，OpenClash/Mihomo APK、manifest、SBOM 和公钥齐全；
-- 产物不含私有 Qualcomm 固件、危险分区文件或非确定性 build-id。
+- manifest 与 SquashFS 路径均不含私有 Qualcomm 固件、危险分区文件或
+  非确定性 build-id。
 
 下载后的离线复核：
 

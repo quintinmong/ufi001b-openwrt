@@ -64,6 +64,12 @@ def main() -> None:
         "CONFIG_KERNEL_DEVTMPFS=y",
         "CONFIG_KERNEL_DEVTMPFS_MOUNT=y",
         "CONFIG_PACKAGE_kmod-fs-f2fs=y",
+        "CONFIG_PACKAGE_kmod-ipt-led=y",
+        "CONFIG_PACKAGE_iptables-mod-led=y",
+        "CONFIG_PACKAGE_iptables-nft=y",
+        "CONFIG_PACKAGE_luci-i18n-base-zh-cn=y",
+        "CONFIG_PACKAGE_luci-i18n-firewall-zh-cn=y",
+        "CONFIG_PACKAGE_luci-i18n-package-manager-zh-cn=y",
         "CONFIG_PACKAGE_mkf2fs=y",
     ):
         if symbol not in buildinfo:

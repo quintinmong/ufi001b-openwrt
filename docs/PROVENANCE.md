@@ -14,6 +14,13 @@ modemst/EFS/NV/IMEI、Wi-Fi 校准、SIM 信息、代理订阅和任何密钥。
 `PKG_REDISTRIBUTE:=0`。`PRIVATE_FIRMWARE=1` 只允许本地 HIL 构建，公开 Actions
 和 Release 必须拒绝对应包名及二进制。
 
+这里的 Qualcomm 私有 firmware 具体包括 MPSS/baseband 的 `mba.mbn`、
+`modem.*`，WCNSS 的 `wcnss.*`，以及设备相关的
+`WCNSS_qcom_wlan_nv.bin` 校准/NV 文件。公开构建同时检查包清单和 SquashFS
+实际路径，不能只依赖 `.gitignore`。公开 ROM 可以包含开源驱动、
+ModemManager/QMI/RPMSG WWAN 支撑，但不包含这些 blob，也不包含设备/SIM 的
+WAN、APN 或身份配置。
+
 ## APK 签名
 
 本地正式候选通过 `APK_SIGNING_KEY_FILE` 引用仓库外 EC 私钥；Actions 使用

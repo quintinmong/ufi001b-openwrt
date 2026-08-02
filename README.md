@@ -37,6 +37,12 @@ BUILD_ROOT="$HOME/ufi001b-openwrt-build" scripts/build.sh
 rootfs、manifest、buildinfo、SPDX SBOM、SHA-256、APK 签名公钥以及独立的
 OpenClash/Mihomo APK。私钥永不进入产物。
 
+公开 ROM 内置 LuCI 简体中文、有效的 OpenWrt
+`aarch64_cortex-a53` 软件源以及 ModemManager/QMI/WWAN 能力，但不预设移动
+WAN、APN、SIM 或运营商参数，也不分发 Qualcomm modem/WCNSS/NV blob。
+LED 默认由内核事件驱动：红灯显示系统 heartbeat、蓝灯响应 Wi-Fi TX；固件
+另含 xt_LED 能力，便于实机验证更精确的转发流量指示。
+
 ## 当前状态
 
 stable Actions run `30597258946` 已成功，artifact `8783573556` 通过完整离线

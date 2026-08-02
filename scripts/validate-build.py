@@ -43,6 +43,7 @@ REQUIRED_KERNEL_CONFIG = (
     "CONFIG_TUN=m",
     "CONFIG_NFT_TPROXY=m",
     "CONFIG_NFT_SOCKET=m",
+    "CONFIG_NETFILTER_XT_TARGET_LED=m",
     "CONFIG_OVERLAY_FS=y",
 )
 
@@ -138,7 +139,11 @@ def validate_boot_build_ids(boot: Path, metadata: dict[str, object]) -> None:
 
 
 def validate_stable_rootfs(
-    unsquashfs: Path, rootfs: Path, partition_bytes: int, manifest: str
+    unsquashfs: Path,
+    rootfs: Path,
+    partition_bytes: int,
+    manifest: str,
+    allow_private_firmware: bool = False,
 ) -> tuple[int, int]:
     if not unsquashfs.is_file():
         raise SystemExit("host unsquashfs4 is missing")
@@ -171,6 +176,7 @@ def validate_stable_rootfs(
 
     listing = run_text((str(unsquashfs), "-ll", str(rootfs)))
     required_paths = (
+        "squashfs-root/etc/apk/repositories.d/distfeeds.list",
         "squashfs-root/etc/init.d/openclash",
         "squashfs-root/etc/init.d/rmtfs",
         "squashfs-root/etc/hotplug.d/rpmsg/55-rpmsgexport",
@@ -204,6 +210,27 @@ def validate_stable_rootfs(
         re.MULTILINE,
     ):
         raise SystemExit("SquashFS is missing the RPMSG WWAN control module")
+    if not re.search(
+        r"squashfs-root/lib/modules/[^/\s]+/xt_LED\.ko$", listing, re.MULTILINE
+    ):
+        raise SystemExit("SquashFS is missing the Netfilter xt_LED module")
+
+    private_firmware_paths = (
+        r"squashfs-root/lib/firmware/mba\.mbn$",
+        r"squashfs-root/lib/firmware/modem\.[^/\s]+$",
+        r"squashfs-root/lib/firmware/wcnss\.[^/\s]+$",
+        r"squashfs-root/lib/firmware/wlan/prima/WCNSS_qcom_wlan_nv\.bin$",
+    )
+    leaked_paths = [
+        pattern
+        for pattern in private_firmware_paths
+        if re.search(pattern, listing, re.IGNORECASE | re.MULTILINE)
+    ]
+    if leaked_paths and not allow_private_firmware:
+        raise SystemExit(
+            "private Qualcomm firmware leaked into public SquashFS:\n- "
+            + "\n- ".join(leaked_paths)
+        )
 
     boot_modules = run_text(
         (
@@ -286,6 +313,10 @@ def validate_stable_rootfs(
         )
     )
     for expected in (
+        "luci.main.lang='zh_cn'",
+        "system.ufi001b_red_system.trigger='heartbeat'",
+        "system.ufi001b_blue_wifi.trigger='phy0tx'",
+        "system.ufi001b_green_unused.trigger='none'",
         "zram_size_mb='96'",
         "zram_comp_algo='lzo-rle'",
         "network.lan.netmask='255.255.255.0'",
@@ -293,6 +324,54 @@ def validate_stable_rootfs(
     ):
         if expected not in defaults:
             raise SystemExit(f"stable UCI defaults missing {expected}")
+    forbidden_connection_defaults = re.compile(
+        r"(?:network\.wan|\bctnet\b|\bapn\b|\bsim_pin\b|\boperator(?:_id)?\b|"
+        r"\.proto=['\"]modemmanager['\"])",
+        re.IGNORECASE,
+    )
+    if forbidden_connection_defaults.search(defaults):
+        raise SystemExit("stable ROM must not preconfigure WAN, APN, SIM, or operator data")
+
+    board_network = run_text(
+        (
+            str(unsquashfs),
+            "-cat",
+            str(rootfs),
+            "etc/board.d/02_network",
+        )
+    )
+    if forbidden_connection_defaults.search(board_network):
+        raise SystemExit("stable board defaults must not create a WAN connection profile")
+
+    repositories = run_text(
+        (
+            str(unsquashfs),
+            "-cat",
+            str(rootfs),
+            "etc/apk/repositories.d/distfeeds.list",
+        )
+    )
+    if "aarch64_cortex-a53_neon" in repositories:
+        raise SystemExit("stable ROM retained the nonexistent neon package feed")
+    expected_feeds = ("base", "luci", "packages", "routing", "telephony", "video")
+    for feed in expected_feeds:
+        pattern = (
+            r"^https://downloads\.openwrt\.org/releases/25\.12\.5/packages/"
+            rf"aarch64_cortex-a53/{feed}/packages\.adb$"
+        )
+        if re.search(pattern, repositories, re.MULTILINE) is None:
+            raise SystemExit(f"stable ROM missing active official {feed} feed")
+    if re.search(
+        r"^# https://downloads\.openwrt\.org/releases/25\.12\.5/targets/"
+        r"msm89xx/msm8916/packages/packages\.adb$",
+        repositories,
+        re.MULTILINE,
+    ) is None:
+        raise SystemExit("stable ROM must disable the unpublished msm89xx target feed")
+    if re.search(r"^https?://.*?/openclash/packages\.adb$", repositories, re.MULTILINE):
+        raise SystemExit("stable ROM must not enable the nonexistent official OpenClash feed")
+    if re.search(r"^# https?://.*?/openclash/packages\.adb$", repositories, re.MULTILINE) is None:
+        raise SystemExit("stable ROM should retain the disabled OpenClash feed for provenance")
 
     with tempfile.TemporaryDirectory(prefix="ufi001b-mihomo-") as temp_dir:
         mihomo = Path(temp_dir) / "clash_meta"
@@ -348,14 +427,22 @@ def validate_stable_rootfs(
         "dnsmasq-full",
         "fstools",
         "kmod-fs-f2fs",
+        "kmod-ipt-led",
         "kmod-nft-socket",
         "kmod-nft-tproxy",
         "kmod-tun",
         "kmod-usb-gadget-eth",
         "kmod-zram",
+        "iptables-mod-led",
+        "iptables-nft",
+        "luci-i18n-base-zh-cn",
+        "luci-i18n-firewall-zh-cn",
+        "luci-i18n-package-manager-zh-cn",
+        "luci-proto-modemmanager",
         "luci-app-openclash",
         "mihomo-openclash",
         "mkf2fs",
+        "modemmanager",
         "zram-swap",
     }
     missing_packages = sorted(required_packages - packages)
@@ -417,6 +504,7 @@ def main() -> None:
         rootfs,
         sizes["rootfs"],
         manifest,
+        args.allow_private_firmware,
     )
 
     config = read_kernel_config(args.tree)

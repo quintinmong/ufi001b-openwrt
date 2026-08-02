@@ -30,3 +30,20 @@ USB 使用 configfs RNDIS，LAN 默认地址为 `192.168.1.1`，IPv6 默认禁�
 时区为 `Asia/Shanghai`。内核保留 MSM8916 modem、QRTR、BAM-DMUX、WCN36xx、
 nftables TPROXY、TUN 和 zram 支撑。OpenClash 包随镜像构建，但其代理功能
 测试不属于当前 Goal。
+
+ROM 只提供 ModemManager、QMI/RPMSG WWAN 和 LuCI 协议能力，不创建 WAN
+接口，不保存 `ctnet`、运营商、APN、SIM PIN 或自动拨号参数。具体移动网络
+配置属于每台设备和 SIM 的 OverlayFS 数据，不能成为公开固件默认值。
+
+## ROM 默认与 LED
+
+LuCI 基础界面、防火墙、包管理器的简体中文翻译随 SquashFS 提供，首次启动
+默认使用 `zh_cn`。共享软件源架构固定为 OpenWrt 官方发布的
+`aarch64_cortex-a53`；本项目没有公开 target 包仓，因此 msm89xx target 源和
+不存在的官方 OpenClash 源在 `/rom` 中保留为注释，仅启用六个官方共享源。
+
+LED 不使用轮询守护进程。默认采用 OpenStick 社区习惯：红灯由内核
+`heartbeat` 表示系统存活，蓝灯由 mac80211 `phy0tx` 表示 Wi-Fi 发包，外壳
+不可见的 `green:wan` 通道关闭。固件同时包含 Netfilter `xt_LED` 与
+iptables-nft 扩展，供 HIL 在确认转发路径后测试“匹配到真实转发包才闪”的
+备选规则；ROM 默认不写入未经实机验证的防火墙 LED 规则。

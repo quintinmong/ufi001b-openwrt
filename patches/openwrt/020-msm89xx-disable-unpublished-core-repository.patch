@@ -1,0 +1,28 @@
+From: UFI001B OpenWrt maintainers
+Subject: [PATCH] base-files: disable unpublished msm89xx core repository
+
+The msm89xx target is carried by this downstream tree and OpenWrt does not
+publish a matching targets/msm89xx/msm8916 package repository.  Keep the
+generated URL visible for provenance, but comment it out so apk update uses
+only the official shared architecture feeds.
+
+---
+ package/base-files/Makefile | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/package/base-files/Makefile b/package/base-files/Makefile
+index 6f624e432b..a929212478 100644
+--- a/package/base-files/Makefile
++++ b/package/base-files/Makefile
+@@ -253,6 +253,9 @@ ifneq ($(CONFIG_USE_APK),)
+ 	mkdir -p $(1)/etc/apk/repositories.d
+ 	$(call FeedSourcesAppendAPK,$(1)/etc/apk/repositories.d/distfeeds.list)
+ 	$(VERSION_SED_SCRIPT) $(1)/etc/apk/repositories.d/distfeeds.list
++	if [ "$(BOARD)" = "msm89xx" ]; then \
++		$(SED) '1s,^,# ,' $(1)/etc/apk/repositories.d/distfeeds.list; \
++	fi
+ 
+ 	rm -f $(1)/etc/uci-defaults/13_fix-group-user
+ 	rm -f $(1)/sbin/pkg_check
+-- 
+2.51.0

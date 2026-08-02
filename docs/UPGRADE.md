@@ -31,3 +31,7 @@ rootfs 作为一组回退，避免 kernel/kmod ABI 不匹配。仍然只写 p12/
 
 OpenClash 单包回滚则安装上一版 APK，并恢复与之兼容的配置。若代理导致
 失联，先通过有线 USB 管理口停用 OpenClash，不要立刻重刷整机。
+
+公开固件不会携带 Qualcomm modem/WCNSS/NV 文件，也不会预设移动 WAN。
+全新 overlay 或完整刷入后，应从设备自己的合规备份恢复所需私有 firmware，
+再由用户为当前 SIM 配置 APN/连接；不要从其他棒子复制校准或身份数据。

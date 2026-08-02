@@ -83,9 +83,11 @@ stable run `30554242007`（commit `61beb7f`）在 Rust 1.94 host LLVM 的
 
 ## 后续改进（不阻塞本 Goal）
 
-1. 将运行时发现的软件源架构、中文和 LED 默认配置纳入后续构建，避免恢复
-   出厂后需要重新应用；
-2. 按独立的 [OPENCLASH.md](OPENCLASH.md) 计划继续透明代理运行测试。
+1. 软件源架构、中文和 LED 默认配置已进入下一候选源码；该候选只等待
+   Actions 构建和离线验证，未经新的明确授权不会刷写；
+2. 下一候选公开 ROM 明确不创建 WAN/APN/SIM/运营商连接配置，并新增 manifest
+   与 SquashFS 双层 Qualcomm 私有 firmware 禁入检查；
+3. 按独立的 [OPENCLASH.md](OPENCLASH.md) 计划继续透明代理运行测试。
 
 新候选已完成 Actions 构建、离线验证、授权写入、回读、完整实机 HIL、断电
 持久化和最终受保护分区审计。OpenClash 运行测试不属于当前 Goal。
