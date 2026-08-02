@@ -39,4 +39,5 @@ LuCI 与 SSH 均通过。rmtfs 分区链接、`rpmsg_wwan_ctrl.ko` 自动加载�
 hotplug fallback 已在实机生效；恢复仅本地持有的私有运行时固件后，MPSS、
 WCNSS、QMI、ModemManager Modem3gpp 和 SIM LTE 注册均通过。Wi-Fi AP 已被
 Windows 扫描到并完成客户端关联、DHCP、LuCI 和公网验证；`ctnet` IPv4
-bearer、DNS 与 NAT 均已通过。断电复验和最终受保护分区审计仍待完成。
+bearer、DNS 与 NAT 均已通过。断电持久化、9008 后正常启动和最终受保护分区
+只读审计全部通过。

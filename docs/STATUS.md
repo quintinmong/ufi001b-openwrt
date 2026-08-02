@@ -47,8 +47,8 @@
 - 本地私有运行时固件 34 个文件已恢复到 overlay，并逐文件 SHA-256 核对；
   重启后 MPSS/WCNSS remoteproc 均保持运行，RPMSG WWAN 模块自动加载，QMI
   与 AT 端口存在，ModemManager 的 Modem3gpp 接口可用。手动启用 modem 后
-  SIM 已注册 LTE 家庭网络并附着分组业务；重启后因尚未建立蜂窝 bearer，
-  modem 按 ModemManager 默认行为回到 disabled；
+  SIM 已注册 LTE 家庭网络并附着分组业务；配置 `ctnet` IPv4 bearer 后，
+  modem 跨重启自动恢复 connected；
 - `UFI001B-OpenWrt` 2.4 GHz WPA2 AP 已启动并被 Windows 扫描到，地址为
   `192.168.2.1/24`；东八区、IPv6 禁用和 overlay 标记均跨软件重启保留。
 - Wi-Fi 客户端已实际关联并取得 `192.168.2.0/24` DHCP 租约；客户端可访问
@@ -60,10 +60,20 @@
   后安装 LuCI base、防火墙和包管理器简体中文翻译，默认语言 `zh_cn` 已跨
   软件重启保留；USB DHCP 暂不下发网关/DNS，避免未选择棒子上网的电脑被
   RNDIS 抢走默认路由。
-- LED sysfs 确认为同一板级 RGB 灯的 `red:power`、`green:wan` 和
-  `blue:wlan`。WCNSS/WWAN 驱动不提供可用 netdev 字节计数或 LED 活动事件，
-  因而流量 trigger 只能常亮；运行时改为红/绿关闭、蓝色由内核 timer 按
-  1.5 秒亮/0.3 秒灭显示系统心跳，实物闪烁验收通过，无后台轮询进程。
+- 实物确认为红、蓝两颗可见 LED；内核另暴露 `green:wan`，但外壳没有可见的
+  独立绿灯。WCNSS/WWAN 驱动不提供可用 netdev 字节计数或 LED 活动事件，
+  因而流量 trigger 只能常亮；运行时改为红灯和不可见绿通道关闭、蓝灯由
+  内核 timer 按 1.5 秒亮/0.3 秒灭显示系统心跳，实物闪烁验收通过，无后台
+  轮询进程；
+- 候选已完成多次软件重启、断电冷启动和 9008 后正常启动复验；F2FS overlay
+  标记、UCI、私有固件、中文包、软件源修正、LTE、Wi-Fi 和 LED 设置均保留；
+- 最终 `AuditProtected` 只读审计通过：GPT 与 `fsc`、`fsg`、`modemst1`、
+  `modemst2` 全部匹配备份基线和设备唯一前缀，审计未写入 eMMC；
+- 设备上的 `firstboot`/`jffs2reset` 均调用 fstools `factoryreset`；当前
+  `rootfs_data` 明确为挂载于 `/overlay` 的 `/dev/loop0` F2FS。官方
+  [fstools factoryreset 源码](https://git.openwrt.org/project/fstools/plain/jffs2reset.c)
+  固定查找 `rootfs_data` 并在已挂载时仅删除 overlay 文件，因此恢复出厂
+  语义不会触及 GPT、modem/NV/EFS；为保留已验收配置未实际执行清理。
 
 ## 已解决的构建失败
 
@@ -71,14 +81,14 @@ stable run `30554242007`（commit `61beb7f`）在 Rust 1.94 host LLVM 的
 `3752/3795` 链接阶段失败。runner 仅余 5 MiB，`ld.bfd` 报告
 `No space left on device`；没有生成或上传可刷写 artifact。
 
-## 待完成
+## 后续改进（不阻塞本 Goal）
 
-1. 完成最终断电持久化复验；
-2. 再次审计 GPT 与受保护分区；
-3. 将运行时发现的软件源架构修正纳入后续构建，避免恢复出厂后丢失。
+1. 将运行时发现的软件源架构、中文和 LED 默认配置纳入后续构建，避免恢复
+   出厂后需要重新应用；
+2. 按独立的 [OPENCLASH.md](OPENCLASH.md) 计划继续透明代理运行测试。
 
-新候选已完成 Actions 构建、离线验证、授权写入、回读和首轮实机 HIL。
-OpenClash 运行测试不属于当前 Goal。
+新候选已完成 Actions 构建、离线验证、授权写入、回读、完整实机 HIL、断电
+持久化和最终受保护分区审计。OpenClash 运行测试不属于当前 Goal。
 
 历史 run `30541982297` / artifact `8762389406` 的 ext4 镜像仅保留为设备恢复
 依据，不再属于源码构建、CI、Release 或正常刷写流程。

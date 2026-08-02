@@ -17,11 +17,12 @@
 | stable 构建与离线验证脚本 | run `30744657848` 通过 |
 | stable artifact 与精确哈希 | artifact `8834512936` 已固定 |
 | p14/p12 专用 HIL 工具 | 已固定，LocalCheck 通过 |
-| 写入回读、GPT 与受保护分区 | p14/p12 回读通过，写前审计通过，最终审计待执行 |
-| OverlayFS/F2FS | 新候选已通过冷启动和软件重启持久化复验 |
+| 写入回读、GPT 与受保护分区 | p14/p12 回读、写前和最终只读审计全部通过 |
+| OverlayFS/F2FS | 冷启动、软件重启、断电和 9008 后正常启动复验全部通过 |
 | RNDIS、DHCP、LuCI、SSH | 新候选已通过 |
 | Wi-Fi、SIM、基带 | 客户端关联/DHCP/公网、LTE bearer、DNS/NAT 均已通过 |
+| 恢复出厂语义 | 设备映射与 fstools 源码静态审计确认仅清理 `rootfs_data` overlay |
 
-因此 Goal 尚未完成；剩余项为最终断电复验和受保护分区审计。运行时发现的
-软件源架构修正应纳入后续构建，但不改变当前 p12/p14 HIL 结论。OpenClash
-运行测试已明确移出本 Goal。
+因此本 Goal 已完成。运行时发现的软件源架构、中文和 LED 默认配置可在后续
+构建中固化，但不改变当前 p12/p14 镜像及设备 HIL 结论。OpenClash 运行测试
+已明确移出本 Goal。

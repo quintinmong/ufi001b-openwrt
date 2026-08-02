@@ -1,8 +1,8 @@
 # UFI001B stable HIL 清单
 
 候选固定为 run `30744657848`、commit `5285456`、artifact `8834512936`；完整
-哈希见 [CANDIDATE.md](CANDIDATE.md)。`LocalCheck` 和候选实机写入/启动已通过，
-以下未勾选项仍待执行。
+哈希见 [CANDIDATE.md](CANDIDATE.md)。`LocalCheck`、候选实机写入、回读、
+冷启动、断电持久化和最终只读审计均已通过。
 
 上一候选的 p14/p12 写入、回读、OverlayFS、RNDIS、DHCP、LuCI 和 SSH 均已
 通过。当前候选保留 `/24` 修复，并补齐 rmtfs EFS 分区映射、RPMSG WWAN
@@ -21,7 +21,7 @@ QMI/AT 模块与 rpmsg hotplug fallback。
 - [x] p14 写入后按实际长度回读，SHA-256 与候选一致；
 - [x] 回读 rootfs 可解析为 SquashFS，准确偏移处为 `deadc0de`；
 - [x] p12 写入后按实际长度回读，SHA-256 与候选一致；
-- [ ] GPT 和所有受保护分区在写前、写后完全一致。
+- [x] GPT 和所有受保护分区在写前、写后完全一致。
 
 ## C. 文件系统与持久化
 
@@ -29,8 +29,9 @@ QMI/AT 模块与 rpmsg hotplug fallback。
 - [x] `/rom` 为只读 SquashFS；
 - [x] `/overlay` 为 p14 剩余空间上的可写 F2FS；
 - [x] `/` 的类型为 overlay，容量符合离线计算；
-- [ ] UCI 修改、测试文件和软件安装跨正常重启及断电保持；
-- [ ] 恢复出厂只清理 overlay，不影响其他分区。
+- [x] UCI 修改、测试文件和软件安装跨正常重启及断电保持；
+- [x] 恢复出厂语义经设备映射和 fstools 源码静态审计确认只清理
+  `rootfs_data`/overlay，不影响其他分区；为保留当前配置未实际执行清理。
 
 ## D. 设备基本功能
 
@@ -39,8 +40,9 @@ QMI/AT 模块与 rpmsg hotplug fallback。
 - [x] Wi-Fi 可设置密码、关联、获取地址并访问网络；
 - [x] SIM 可识别，modem/QRTR/BAM-DMUX 正常，移动数据可建立；
 - [x] 时区为 `Asia/Shanghai`，IPv6 默认禁用；
-- [x] 运行阶段红/绿 LED 关闭，蓝 LED 以 1.5 秒亮、0.3 秒灭的内核 timer
-  心跳显示，实物观察通过且不使用后台轮询；
-- [ ] 多次冷启动后功能一致，受保护分区最终审计无变化。
+- [x] 实物可见的红、蓝两颗 LED 中，运行阶段红灯关闭，蓝灯以 1.5 秒亮、
+  0.3 秒灭的内核 timer 心跳显示，实物观察通过且不使用后台轮询；内核暴露
+  但外壳无可见独立灯的 `green:wan` 保持关闭；
+- [x] 多次冷启动后功能一致，受保护分区最终审计无变化。
 
 OpenClash 安装和透明代理运行测试不属于当前 Goal，不阻塞 A-D 验收。
