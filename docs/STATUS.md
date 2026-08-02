@@ -1,6 +1,6 @@
 # 当前状态
 
-更新时间：2026-08-02。
+更新时间：2026-08-03。
 
 ## 已完成
 
@@ -39,6 +39,18 @@
   导致 ModemManager 缺少 QMI 控制口。源码已补齐 EFS 映射、
   `rpmsg_wwan_ctrl.ko` 打包/自动加载和 rpmsg hotplug 的 DEVNAME fallback，
   并加入构建期强制验证。
+- 当前 stable 候选已仅写 p14/p12，rootfs/boot 均完成逐镜像回读和 SHA-256
+  验证；写前 GPT 与 `fsc`、`fsg`、`modemst1`、`modemst2` 审计通过；
+- 候选冷启动后 RNDIS 以 426 Mbps 枚举，Windows DHCP 获得
+  `192.168.1.154/24`，`192.168.1.1`、LuCI 和 SSH 均可用；`/rom`、
+  `/overlay`、`/` 分别为只读 SquashFS、约 3.3 GiB F2FS 和 OverlayFS；
+- 本地私有运行时固件 34 个文件已恢复到 overlay，并逐文件 SHA-256 核对；
+  重启后 MPSS/WCNSS remoteproc 均保持运行，RPMSG WWAN 模块自动加载，QMI
+  与 AT 端口存在，ModemManager 的 Modem3gpp 接口可用。手动启用 modem 后
+  SIM 已注册 LTE 家庭网络并附着分组业务；重启后因尚未建立蜂窝 bearer，
+  modem 按 ModemManager 默认行为回到 disabled；
+- `UFI001B-OpenWrt` 2.4 GHz WPA2 AP 已启动并被 Windows 扫描到，地址为
+  `192.168.2.1/24`；东八区、IPv6 禁用和 overlay 标记均跨软件重启保留。
 
 ## 已解决的构建失败
 
@@ -48,11 +60,11 @@ stable run `30554242007`（commit `61beb7f`）在 Rust 1.94 host LLVM 的
 
 ## 待完成
 
-1. 仅写新候选 p14/p12 并回读验证，重新安装仅本地持有的私有固件；
-2. 完成 Wi-Fi 关联/获址、ModemManager、SIM 和移动数据 HIL；
-3. 再次审计 GPT 与受保护分区，完成冷启动和断电持久化验收。
+1. 完成 Wi-Fi 客户端关联、DHCP 获址和管理页访问；
+2. 配置蜂窝 bearer/APN 后完成移动数据 HIL；
+3. 完成断电持久化复验，并再次审计 GPT 与受保护分区。
 
-新候选已完成 Actions 构建、离线验证和固定，用户已授权仅写其 p14/p12。
+新候选已完成 Actions 构建、离线验证、授权写入、回读和首轮实机 HIL。
 OpenClash 运行测试不属于当前 Goal。
 
 历史 run `30541982297` / artifact `8762389406` 的 ext4 镜像仅保留为设备恢复

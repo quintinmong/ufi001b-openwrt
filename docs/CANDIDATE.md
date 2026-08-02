@@ -32,8 +32,11 @@ RX/TX。artifact 只含 `S90` 链接，GitHub build job 成功且没有 annotati
 上一候选已完成 p14/p12 写入和回读哈希。管理 LAN 直接绑定 `usb0` 后，RNDIS
 carrier 与 RX 已恢复，但运行时地址被配置成 `192.168.1.1/32`，导致没有到
 Windows 端的直连返回路由。本候选在运行时迁移和首次启动默认配置中都显式
-设置 `network.lan.netmask='255.255.255.0'`；Wi-Fi 将作为独立网络验证。尚待
-上一候选已完成写前审计、p14/p12 写入和逐镜像回读，OverlayFS、RNDIS、
-DHCP、LuCI 与 SSH 已通过。当前候选补齐 rmtfs 分区链接、
-`rpmsg_wwan_ctrl.ko` 打包/自动加载和 rpmsg hotplug fallback；artifact 已通过
-完整离线验证，用户已针对本次构建授权仅写 p14/p12，待实机写前审计。
+设置 `network.lan.netmask='255.255.255.0'`；Wi-Fi 作为独立网络验证。
+
+本候选已完成写前审计、p14/p12 写入和逐镜像回读，OverlayFS、RNDIS、DHCP、
+LuCI 与 SSH 均通过。rmtfs 分区链接、`rpmsg_wwan_ctrl.ko` 自动加载和 rpmsg
+hotplug fallback 已在实机生效；恢复仅本地持有的私有运行时固件后，MPSS、
+WCNSS、QMI、ModemManager Modem3gpp 和 SIM LTE 注册均通过。Wi-Fi AP 已被
+Windows 扫描到，尚待客户端关联/获址；移动数据、断电复验和最终受保护分区
+审计仍待完成。
