@@ -84,7 +84,9 @@ stable run `30554242007`（commit `61beb7f`）在 Rust 1.94 host LLVM 的
 ## 后续改进（不阻塞本 Goal）
 
 1. 软件源架构、中文和 LED 默认配置已进入下一候选源码；该候选只等待
-   Actions 构建和离线验证，未经新的明确授权不会刷写；
+   实机 HIL，未经新的明确授权不会刷写；run `30759026223`、artifact
+   `8839178394` 已构建成功并通过完整离线验证，精确证据见
+   [ROM-DEFAULTS-CANDIDATE.md](ROM-DEFAULTS-CANDIDATE.md)；
 2. 下一候选公开 ROM 明确不创建 WAN/APN/SIM/运营商连接配置，并新增 manifest
    与 SquashFS 双层 Qualcomm 私有 firmware 禁入检查；
 3. 按独立的 [OPENCLASH.md](OPENCLASH.md) 计划继续透明代理运行测试。

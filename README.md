@@ -52,4 +52,5 @@ stable Actions run `30597258946` 已成功，artifact `8783573556` 通过完整�
 
 详见[构建](docs/BUILD.md)、[架构](docs/ARCHITECTURE.md)、
 [刷写与恢复](docs/FLASH-AND-RECOVERY.md)、[HIL 清单](docs/HIL-CHECKLIST.md)和
-[状态](docs/STATUS.md)。
+[状态](docs/STATUS.md)。中文/软件源/LED 新构建的精确来源与哈希见
+[ROM 默认配置候选](docs/ROM-DEFAULTS-CANDIDATE.md)；该候选尚未获准刷写。
