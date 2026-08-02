@@ -1,11 +1,11 @@
 # UFI001B stable HIL 清单
 
-候选固定为 run `30697722579`、commit `e6af8ab`、artifact `8819870142`；完整
+候选固定为 run `30705979030`、commit `3953aea`、artifact `8822507318`；完整
 哈希见 [CANDIDATE.md](CANDIDATE.md)。`LocalCheck` 已通过，以下设备项待执行。
 
 上一候选的 p14/p12 写入、回读、GPT 与写前受保护分区审计均已通过，且首次
-启动已创建 F2FS overlay；上一候选证明 S25 时 netifd 尚未注册 LAN。当前候选
-把实际 RNDIS 配置延后至 S90，并兼容旧 Overlay 的 S25 链接。
+启动已创建 F2FS overlay；S90 诊断证明动态 USB port 仍不能生成 `br-lan`。
+当前候选把管理 LAN 直接迁移到 `usb0`，并保留 S90 与旧 S25 defer 兼容。
 
 ## A. 离线与写前审计
 

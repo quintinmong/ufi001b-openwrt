@@ -16,16 +16,16 @@
 - 删除与最终 Goal 无关的 ext4 开发版构建、发布、验证和刷写入口。
 - 仓库已转为 public；完整 Git 历史未发现密钥、设备标识、备份或 proprietary
   blob，4 个旧开发版 artifact 已从 GitHub 删除；
-- stable run `30697722579`（commit `e6af8ab`）成功，artifact `8819870142`
+- stable run `30705979030`（commit `3953aea`）成功，artifact `8822507318`
   已下载并通过离线验证；GitHub Actions 已升级到 Node 24，build annotations 为 0；
 - stable HIL 脚本已固定候选，`LocalCheck` 验证 provenance、备份、GPT、loader、
   boot、SquashFS、F2FS preinit、RNDIS、marker 与哈希后通过；
 - 旧候选已仅写 p14/p12 并完成回读；写前后 GPT、`fsc`、`fsg`、`modemst1`、
   `modemst2` 一致，首次启动已创建可读且容量正确的 F2FS overlay；
-- pre-bind 诊断证明内核只在首次 UDC 绑定后创建 `usb0`；后续诊断证明 S25 时
-  netifd 仍未注册 LAN，重启 LAN 会返回 `Interface lan not found`。当前候选
-  把实际配置延后至 S90，旧 Overlay 的 S25 调用会自动 defer；artifact 已验证
-  只含新的 S90 链接。
+- pre-bind 诊断证明内核只在首次 UDC 绑定后创建 `usb0`；S25 诊断证明 netifd
+  尚未注册 LAN，S90 诊断进一步证明动态 USB port 仍不能实例化 `br-lan`。
+  当前候选让管理 LAN 直接绑定 `usb0`，执行 network reload 后最终重绑；旧
+  Overlay 的 S25 调用仍会自动 defer。
 
 ## 已解决的构建失败
 
