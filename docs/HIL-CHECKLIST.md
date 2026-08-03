@@ -2,8 +2,7 @@
 
 候选固定为 run `30759026223`、commit `20b4b667`、artifact `8839178394`；完整
 哈希见 [CANDIDATE.md](CANDIDATE.md)。`LocalCheck`、候选实机写入、回读、
-冷启动、运行时功能和断电持久化均已通过；本候选的写后受保护分区最终只读
-审计仍需再次进入 9008。
+冷启动、运行时功能、断电持久化和写后受保护分区最终只读审计均已通过。
 
 当前候选保留 `/24`、rmtfs EFS 分区映射、RPMSG WWAN QMI/AT 与 hotplug
 fallback，并固化中文、官方 feed 和内核事件 LED 默认策略。
@@ -44,7 +43,8 @@ fallback，并固化中文、官方 feed 和内核事件 LED 默认策略。
   0.3 秒灭的内核 timer 心跳显示，实物观察通过且不使用后台轮询；内核暴露
   但外壳无可见独立灯的 `green:wan` 保持关闭；
 - [x] 多次冷启动后功能一致；
-- [ ] 再次进入 9008，完成本候选写后 GPT 与受保护分区最终只读审计。
+- [x] 再次进入 9008；GPT 与 `fsc/fsg/modemst1/modemst2` 均匹配备份基线，
+  审计未写入 eMMC。
 
 OpenClash 安装和透明代理运行测试不属于当前 Goal，不阻塞 A-D 验收。
 

@@ -54,7 +54,7 @@ SquashFS/F2FS OverlayFS、RNDIS、LuCI/SSH、中文、Wi-Fi、LTE、DNS/NAT 和 
 UFI001B 冷启动时 ModemManager 发现 modem 晚于 netifd；设备 overlay 因而安装
 了一个最多运行 180 秒、WAN 在线即退出的补偿任务。它只在连接未处于 pending
 状态时执行 `ifup wan`，已通过软件重启验证，不是常驻监控进程。
-本候选写后 GPT 与受保护分区的最终只读审计仍需再次进入 9008。
+本候选写后 GPT 与受保护分区的最终 9008 只读审计也已通过。
 
 详见[构建](docs/BUILD.md)、[架构](docs/ARCHITECTURE.md)、
 [刷写与恢复](docs/FLASH-AND-RECOVERY.md)、[HIL 清单](docs/HIL-CHECKLIST.md)和

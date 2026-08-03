@@ -75,8 +75,9 @@
   设备 overlay 已安装 `ufi001b-wan-retry`：最多 180 秒，仅在接口非 pending
   时补发 `ifup wan`，WAN 在线后退出。修正前的 5 秒重复触发会重置注册流程；
   修正后软件重启只触发一次，8 秒完成 LTE、DNS 和公网恢复，无常驻进程；
-- 最终 `AuditProtected` 只读审计通过：GPT 与 `fsc`、`fsg`、`modemst1`、
-  `modemst2` 全部匹配备份基线和设备唯一前缀，审计未写入 eMMC；
+- 当前 ROM 默认配置候选的最终 `AuditProtected` 只读审计通过：GPT 与 `fsc`、
+  `fsg`、`modemst1`、`modemst2` 全部匹配备份基线和设备唯一前缀，审计未
+  写入 eMMC；
 - 设备上的 `firstboot`/`jffs2reset` 均调用 fstools `factoryreset`；当前
   `rootfs_data` 明确为挂载于 `/overlay` 的 `/dev/loop0` F2FS。官方
   [fstools factoryreset 源码](https://git.openwrt.org/project/fstools/plain/jffs2reset.c)
@@ -95,9 +96,8 @@ stable run `30554242007`（commit `61beb7f`）在 Rust 1.94 host LLVM 的
    配置，不进入公开 ROM；
 2. 按独立的 [OPENCLASH.md](OPENCLASH.md) 计划继续透明代理运行测试。
 
-新候选已完成 Actions 构建、离线验证、授权写入、回读、运行时 HIL 和重启
-持久化；写后受保护分区最终只读审计仍需再次进入 9008。OpenClash 运行测试
-不属于当前 Goal。
+新候选已完成 Actions 构建、离线验证、授权写入、回读、运行时 HIL、重启
+持久化和写后受保护分区最终只读审计。OpenClash 运行测试不属于当前 Goal。
 
 历史 run `30541982297` / artifact `8762389406` 的 ext4 镜像仅保留为设备恢复
 依据，不再属于源码构建、CI、Release 或正常刷写流程。
