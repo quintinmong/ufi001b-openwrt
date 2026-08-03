@@ -1,21 +1,21 @@
 # 当前 stable 候选
 
-构建与下载时间：2026-08-02。
+构建与下载时间：2026-08-03。当前设备运行的是 ROM 默认配置候选。
 
 | 字段 | 值 |
 | --- | --- |
-| Actions run | `30744657848` |
-| Commit | `5285456eafb96f48e2ba7fe97f6dfbe23d3e3358` |
+| Actions run | `30759026223` |
+| Commit | `20b4b667a5bb5a5c403f3744a286ec33bab6f0c5` |
 | Artifact | `ufi001b-stable-squashfs` |
-| Artifact ID | `8834512936` |
-| Artifact bytes | `61,062,754` |
+| Artifact ID | `8839178394` |
+| Artifact bytes | `61,238,677` |
 | boot bytes | `6,113,280` |
-| boot SHA-256 | `a8daf147af8683d1906b7ab5f8bcc315c1b555ca3b48502d10e57209da435545` |
+| boot SHA-256 | `8c6f10f66eefe4a38a50f5bc9258354bdd5aa845a42a945cd59f6fe8737dc85f` |
 | rootfs bytes | `31,195,648` |
-| rootfs SHA-256 | `8634ce3a195a5f157d9baee714c3f005cfd338b7ad334104f963519a4e30819d` |
-| SquashFS bytes_used | `30,964,574` |
-| rootfs_data offset | `30,998,528` |
-| p14 overlay capacity | `3,506,880,000` bytes |
+| rootfs SHA-256 | `e760e2b325ef6df2e4ea8b2fc3d4b589a51626d8b0a816168b2eb9dd21b73b09` |
+| SquashFS bytes_used | `31,140,468` |
+| rootfs_data offset | `31,195,136` |
+| p14 overlay capacity | `3,506,683,392` bytes |
 | APK public-key SHA-256 | `cdca512810c06a6136ca81998d9d2ce1416b72d30fec67dee81fbb34c9447ecb` |
 
 Artifact 已通过 `fetch-verify-actions-artifact.ps1`、`verify-stable-artifact.py`

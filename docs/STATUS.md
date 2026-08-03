@@ -16,8 +16,8 @@
 - 删除与最终 Goal 无关的 ext4 开发版构建、发布、验证和刷写入口。
 - 仓库已转为 public；完整 Git 历史未发现密钥、设备标识、备份或 proprietary
   blob，4 个旧开发版 artifact 已从 GitHub 删除；
-- stable run `30744657848`（commit `5285456`）成功，artifact `8834512936`
-  已下载并通过离线验证；GitHub Actions 已升级到 Node 24，build annotations 为 0；
+- stable run `30759026223`（commit `20b4b667`）成功，artifact `8839178394`
+  已下载并通过离线验证；GitHub Actions 使用 Node 24，build annotations 为 0；
 - stable HIL 脚本已固定候选，`LocalCheck` 验证 provenance、备份、GPT、loader、
   boot、SquashFS、F2FS preinit、RNDIS、marker 与哈希后通过；
 - 旧候选已仅写 p14/p12 并完成回读；写前后 GPT、`fsc`、`fsg`、`modemst1`、
@@ -67,6 +67,14 @@
   轮询进程；
 - 候选已完成多次软件重启、断电冷启动和 9008 后正常启动复验；F2FS overlay
   标记、UCI、私有固件、中文包、软件源修正、LTE、Wi-Fi 和 LED 设置均保留；
+- ROM 默认配置候选 run `30759026223`（commit `20b4b667`，artifact
+  `8839178394`）已完成授权写入、p14/p12 回读和增量 HIL；首次默认中文、官方
+  `aarch64_cortex-a53` feed、私有 firmware 禁入以及 heartbeat/phy0tx LED
+  策略均通过；
+- 冷启动实测确认 netifd 早于 ModemManager 发现 modem，失败后不会自动恢复。
+  设备 overlay 已安装 `ufi001b-wan-retry`：最多 180 秒，仅在接口非 pending
+  时补发 `ifup wan`，WAN 在线后退出。修正前的 5 秒重复触发会重置注册流程；
+  修正后软件重启只触发一次，8 秒完成 LTE、DNS 和公网恢复，无常驻进程；
 - 最终 `AuditProtected` 只读审计通过：GPT 与 `fsc`、`fsg`、`modemst1`、
   `modemst2` 全部匹配备份基线和设备唯一前缀，审计未写入 eMMC；
 - 设备上的 `firstboot`/`jffs2reset` 均调用 fstools `factoryreset`；当前
@@ -83,16 +91,13 @@ stable run `30554242007`（commit `61beb7f`）在 Rust 1.94 host LLVM 的
 
 ## 后续改进（不阻塞本 Goal）
 
-1. 软件源架构、中文和 LED 默认配置已进入下一候选源码；该候选只等待
-   实机 HIL，未经新的明确授权不会刷写；run `30759026223`、artifact
-   `8839178394` 已构建成功并通过完整离线验证，精确证据见
-   [ROM-DEFAULTS-CANDIDATE.md](ROM-DEFAULTS-CANDIDATE.md)；
-2. 下一候选公开 ROM 明确不创建 WAN/APN/SIM/运营商连接配置，并新增 manifest
-   与 SquashFS 双层 Qualcomm 私有 firmware 禁入检查；
-3. 按独立的 [OPENCLASH.md](OPENCLASH.md) 计划继续透明代理运行测试。
+1. WAN/APN、私有 Qualcomm firmware 与冷启动拨号补偿继续保持为设备 overlay
+   配置，不进入公开 ROM；
+2. 按独立的 [OPENCLASH.md](OPENCLASH.md) 计划继续透明代理运行测试。
 
-新候选已完成 Actions 构建、离线验证、授权写入、回读、完整实机 HIL、断电
-持久化和最终受保护分区审计。OpenClash 运行测试不属于当前 Goal。
+新候选已完成 Actions 构建、离线验证、授权写入、回读、运行时 HIL 和重启
+持久化；写后受保护分区最终只读审计仍需再次进入 9008。OpenClash 运行测试
+不属于当前 Goal。
 
 历史 run `30541982297` / artifact `8762389406` 的 ext4 镜像仅保留为设备恢复
 依据，不再属于源码构建、CI、Release 或正常刷写流程。

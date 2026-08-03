@@ -1,0 +1,55 @@
+#!/bin/sh /etc/rc.common
+
+# Overlay-only cold-boot workaround.  On UFI001B, netifd may try WAN before
+# ModemManager has finished discovering the Qualcomm modem.  This bounded
+# one-shot task retries only during the first three minutes after boot.
+
+START=99
+USE_PROCD=1
+EXTRA_COMMANDS="run"
+EXTRA_HELP="\trun\tRun the bounded WAN retry loop"
+
+start_service() {
+	procd_open_instance
+	procd_set_param command "$initscript" run
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_close_instance
+}
+
+run() {
+	local attempt=0
+	local request=0
+	local status
+
+	while [ "$attempt" -lt 36 ]; do
+		status="$(ubus call network.interface.wan status 2>/dev/null)"
+
+		if printf '%s\n' "$status" | jsonfilter -e '@.up' | grep -qx true; then
+			logger -t ufi001b-wan-retry "WAN is up; retry task finished"
+			exit 0
+		fi
+
+		# Do not restart a connection attempt that is still registering the
+		# modem.  Repeated ifup calls reset that process on this hardware.
+		if ! printf '%s\n' "$status" | jsonfilter -e '@.pending' | grep -qx true \
+			&& mmcli -L 2>/dev/null | grep -q '/Modem/'; then
+			request=$((request + 1))
+			logger -t ufi001b-wan-retry \
+				"modem discovered; requesting WAN connection (request $request)"
+			ifup wan
+		fi
+
+		attempt=$((attempt + 1))
+		sleep 5
+	done
+
+	if ubus call network.interface.wan status 2>/dev/null \
+		| jsonfilter -e '@.up' | grep -qx true; then
+		logger -t ufi001b-wan-retry "WAN is up; retry task finished"
+		exit 0
+	fi
+
+	logger -t ufi001b-wan-retry "WAN unavailable after 180 seconds; giving up"
+	exit 1
+}

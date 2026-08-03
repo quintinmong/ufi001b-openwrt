@@ -45,13 +45,18 @@ LED 默认由内核事件驱动：红灯显示系统 heartbeat、蓝灯响应 Wi
 
 ## 当前状态
 
-stable Actions run `30597258946` 已成功，artifact `8783573556` 通过完整离线
-验证和 HIL `LocalCheck`。精确尺寸、哈希与 OverlayFS 布局见
-[当前候选](docs/CANDIDATE.md)。设备目前不在手边，因此候选尚未获得当次刷写
-授权，也没有完成 HIL。
+stable Actions run `30759026223`（commit `20b4b667`，artifact
+`8839178394`）已通过完整离线验证、授权写入、逐镜像回读和运行时 HIL。
+SquashFS/F2FS OverlayFS、RNDIS、LuCI/SSH、中文、Wi-Fi、LTE、DNS/NAT 和 LED
+均已验证。设备自己的 34 个私有运行时 firmware 文件、WAN/APN 与 Wi-Fi 密码
+只恢复到设备 overlay，没有进入 ROM、Git、artifact 或 Release。
+
+UFI001B 冷启动时 ModemManager 发现 modem 晚于 netifd；设备 overlay 因而安装
+了一个最多运行 180 秒、WAN 在线即退出的补偿任务。它只在连接未处于 pending
+状态时执行 `ifup wan`，已通过软件重启验证，不是常驻监控进程。
+本候选写后 GPT 与受保护分区的最终只读审计仍需再次进入 9008。
 
 详见[构建](docs/BUILD.md)、[架构](docs/ARCHITECTURE.md)、
 [刷写与恢复](docs/FLASH-AND-RECOVERY.md)、[HIL 清单](docs/HIL-CHECKLIST.md)和
-[状态](docs/STATUS.md)。中文/软件源/LED 新构建的精确来源与哈希见
-[ROM 默认配置候选](docs/ROM-DEFAULTS-CANDIDATE.md)；该候选已完成 p14/p12
-写入回读，正常启动和运行时增量 HIL 待验证。
+[状态](docs/STATUS.md)。中文/软件源/LED 构建的精确来源、哈希与 HIL 结果见
+[ROM 默认配置候选](docs/ROM-DEFAULTS-CANDIDATE.md)。

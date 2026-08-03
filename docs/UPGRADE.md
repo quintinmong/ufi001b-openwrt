@@ -35,3 +35,9 @@ OpenClash 单包回滚则安装上一版 APK，并恢复与之兼容的配置。
 公开固件不会携带 Qualcomm modem/WCNSS/NV 文件，也不会预设移动 WAN。
 全新 overlay 或完整刷入后，应从设备自己的合规备份恢复所需私有 firmware，
 再由用户为当前 SIM 配置 APN/连接；不要从其他棒子复制校准或身份数据。
+
+UFI001B 上 netifd 可能早于 ModemManager 发现 modem，令冷启动 WAN 停在
+`NO_DEVICE`。为已经自行配置 WAN 的设备，可把仓库
+`scripts/ufi001b-wan-retry` 安装为 `/etc/init.d/ufi001b-wan-retry`，设为 0755
+并执行 `enable`。它属于 overlay 运行时配置，不进入公开 ROM；任务最多运行
+180 秒，连接 pending 时只等待，WAN 在线后立即退出，不是常驻监控服务。

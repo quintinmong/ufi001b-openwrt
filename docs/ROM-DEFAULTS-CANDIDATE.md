@@ -2,7 +2,8 @@
 
 构建与下载验证时间：2026-08-03。该候选用于固化中文、软件源和 LED 策略，
 用户已于 2026-08-03 针对该精确候选授权刷写。p14 rootfs 与 p12 boot 已按
-顺序写入并逐镜像回读验证；正常启动和运行时增量 HIL 尚待完成。
+顺序写入并逐镜像回读验证；正常启动、软件重启、运行时增量 HIL 均已完成，
+写后受保护分区最终只读审计仍需再次进入 9008。
 
 | 字段 | 值 |
 | --- | --- |
@@ -44,3 +45,21 @@ ROM 产物复核确认：
 HIL 工具已固定到本候选。写前 GPT 与 `fsc/fsg/modemst1/modemst2` 审计通过；
 p14 回读 SHA-256、SquashFS 与 `deadc0de` 通过，写 p12 前再次回读确认配套
 rootfs，p12 回读 SHA-256 通过。除 p14/p12 外未写入其他分区。
+
+运行时 HIL 结果：
+
+- `/rom` 为只读 SquashFS，`/overlay` 为约 3.3 GiB F2FS，`/` 为 OverlayFS；
+- RNDIS 426 Mbps、DHCP、LuCI、SSH 和首次默认中文通过；
+- `apk update` 验签并读取 10,005 个包；六个共享源使用官方
+  `aarch64_cortex-a53`，无效 target/OpenClash 源保持注释；
+- 初始 ROM/overlay 均无 WAN/APN 和 Qualcomm 私有 firmware；从设备自己的
+  合规备份向 overlay 恢复 34 个文件后，逐文件 SHA-256 一致，MPSS/WCNSS、
+  QMI/AT、ModemManager、Wi-Fi 与 LTE 均通过；
+- AP、WPA2、DHCP、DNS、NAT 和手机公网访问通过；USB 管理 LAN 不向 Windows
+  下发默认网关或 DNS；
+- 红灯 `heartbeat`、蓝灯 `phy0tx`、不可见绿通道 `none` 生效。蓝灯空闲采样
+  无误闪；临时 xt_LED FORWARD 规则能生成内核 trigger，测试后规则与 trigger
+  均已删除；
+- 冷启动竞态由 overlay-only `ufi001b-wan-retry` 补偿：等待 ModemManager，
+  拨号 pending 时不重启流程，最多运行 180 秒且成功后退出。软件重启实测只
+  请求一次，8 秒后 LTE、DNS 和公网恢复。
