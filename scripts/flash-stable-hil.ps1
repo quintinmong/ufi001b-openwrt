@@ -12,7 +12,7 @@ Set-StrictMode -Version Latest
 $repoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $workspaceRoot = Split-Path -Parent $repoRoot
 $deviceRoot = Join-Path $workspaceRoot 'UFI001B_410wifi'
-$candidateRunRoot = Join-Path $repoRoot 'out\actions\30744657848-overlay-retry'
+$candidateRunRoot = Join-Path $repoRoot 'out\actions\30759026223-rom-defaults'
 $candidateRoot = Join-Path $candidateRunRoot 'ufi001b-stable-squashfs'
 $candidateMetadata = Join-Path $candidateRunRoot 'run-metadata.json'
 $emmcdl = Join-Path $workspaceRoot 'tools\emmcdl\Qualcomm Premium Tool V2.4\emmcdl.exe'
@@ -31,11 +31,11 @@ $rootfs = $rootfsMatches[0].FullName
 
 $expected = [ordered]@{
     Repository = 'quintinmong/ufi001b-openwrt'
-    RunId = 30744657848L
-    HeadSha = '5285456EAFB96F48E2BA7FE97F6DFBE23D3E3358'
-    ArtifactId = 8834512936L
+    RunId = 30759026223L
+    HeadSha = '20B4B667A5BB5A5C403F3744A286EC33BAB6F0C5'
+    ArtifactId = 8839178394L
     ArtifactName = 'ufi001b-stable-squashfs'
-    ArtifactBytes = 61062754L
+    ArtifactBytes = 61238677L
     EmmcdlSha256 = '24540D815142A3D63C4BF4A01FD4DB0C0AEFB26794749D65480CE0A9F2BC83BB'
     LoaderSha256 = '959439AA5864685999B713C3ED12AD5FA408149648B670A9A9EF77BCC9DCAB14'
     BackupBytes = 3875520000L
@@ -45,15 +45,15 @@ $expected = [ordered]@{
     BootLastLba = 657407L
     BootBytes = 67108864L
     BootImageBytes = 6113280L
-    BootSha256 = 'A8DAF147AF8683D1906B7AB5F8BCC315C1B555CA3B48502D10E57209DA435545'
+    BootSha256 = '8C6F10F66EEFE4A38A50F5BC9258354BDD5AA845A42A945CD59F6FE8737DC85F'
     RootfsFirstLba = 659456L
     RootfsLastLba = 7569374L
     RootfsBytes = 3537878528L
     RootfsImageBytes = 31195648L
-    RootfsSha256 = '8634CE3A195A5F157D9BAEE714C3F005CFD338B7AD334104F963519A4E30819D'
-    SquashfsBytes = 30964574L
-    RootfsDataOffset = 30998528L
-    OverlayBytes = 3506880000L
+    RootfsSha256 = 'E760E2B325EF6DF2E4EA8B2FC3D4B589A51626D8B0A816168B2EB9DD21B73B09'
+    SquashfsBytes = 31140468L
+    RootfsDataOffset = 31195136L
+    OverlayBytes = 3506683392L
 }
 
 $protectedPrefixHashes = [ordered]@{

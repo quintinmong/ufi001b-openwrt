@@ -1,8 +1,8 @@
 # ROM 默认配置候选
 
 构建与下载验证时间：2026-08-03。该候选用于固化中文、软件源和 LED 策略，
-尚未获得刷写授权，也未替换已通过实机 HIL 的
-[当前 stable 候选](CANDIDATE.md)。
+用户已于 2026-08-03 针对该精确候选授权刷写。p14 rootfs 与 p12 boot 已按
+顺序写入并逐镜像回读验证；正常启动和运行时增量 HIL 尚待完成。
 
 | 字段 | 值 |
 | --- | --- |
@@ -41,5 +41,6 @@ ROM 产物复核确认：
   用户态包含 `xt_LED`、`iptables-nft`、`iptables-mod-led` 供后续 HIL；
 - ModemManager 与 LuCI ModemManager 协议能力仍在 ROM，但没有自动移动 WAN。
 
-刷写仍须用户针对本候选重新明确授权。授权前不得更新 HIL 刷写脚本的固定
-候选，也不得写 p12/p14。
+HIL 工具已固定到本候选。写前 GPT 与 `fsc/fsg/modemst1/modemst2` 审计通过；
+p14 回读 SHA-256、SquashFS 与 `deadc0de` 通过，写 p12 前再次回读确认配套
+rootfs，p12 回读 SHA-256 通过。除 p14/p12 外未写入其他分区。
