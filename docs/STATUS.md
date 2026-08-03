@@ -58,8 +58,11 @@
   不存在；设备 overlay 已备份原配置，将六条官方通用 feed 修正为
   `aarch64_cortex-a53`，禁用不存在的自定义 target/OpenClash feed。索引验签
   后安装 LuCI base、防火墙和包管理器简体中文翻译，默认语言 `zh_cn` 已跨
-  软件重启保留；USB DHCP 暂不下发网关/DNS，避免未选择棒子上网的电脑被
-  RNDIS 抢走默认路由。
+  软件重启保留；
+- USB DHCP 最初按用户当时的选择不下发网关/DNS，仅作为管理口。2026-08-03
+  用户改为 USB 上网模式后，设备 overlay 已恢复下发 `192.168.1.1` 网关和
+  DNS；Windows 续租后获得默认路由，断开 WLAN 时强制 RNDIS ping 公网正常，
+  百度和 Google HTTPS 均返回 200。该运行时选择不改变公开 ROM 默认策略；
 - 实物确认为红、蓝两颗可见 LED；内核另暴露 `green:wan`，但外壳没有可见的
   独立绿灯。WCNSS/WWAN 驱动不提供可用 netdev 字节计数或 LED 活动事件，
   因而流量 trigger 只能常亮；运行时改为红灯和不可见绿通道关闭、蓝灯由

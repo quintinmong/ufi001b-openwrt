@@ -55,8 +55,9 @@ rootfs，p12 回读 SHA-256 通过。除 p14/p12 外未写入其他分区。
 - 初始 ROM/overlay 均无 WAN/APN 和 Qualcomm 私有 firmware；从设备自己的
   合规备份向 overlay 恢复 34 个文件后，逐文件 SHA-256 一致，MPSS/WCNSS、
   QMI/AT、ModemManager、Wi-Fi 与 LTE 均通过；
-- AP、WPA2、DHCP、DNS、NAT 和手机公网访问通过；USB 管理 LAN 不向 Windows
-  下发默认网关或 DNS；
+- AP、WPA2、DHCP、DNS、NAT 和手机公网访问通过。初次 HIL 将 USB LAN 作为
+  纯管理口，不下发网关/DNS；用户随后明确选择 USB 上网模式，当前设备
+  overlay 已恢复向 Windows 下发 `192.168.1.1` 网关和 DNS；
 - 红灯 `heartbeat`、蓝灯 `phy0tx`、不可见绿通道 `none` 生效。蓝灯空闲采样
   无误闪；临时 xt_LED FORWARD 规则能生成内核 trigger，测试后规则与 trigger
   均已删除；
