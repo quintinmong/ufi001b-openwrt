@@ -1,0 +1,48 @@
+name: Bug report
+description: Report a reproducible build, firmware, or hardware compatibility problem
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include IMEI, SIM/APN details, Wi-Fi passwords, device backups, Qualcomm private firmware, NV/EFS, or calibration data.
+  - type: input
+    id: hardware
+    attributes:
+      label: Hardware
+      description: PCB/device revision and relevant peripherals
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Commit SHA, release, or Actions run
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I removed credentials, private firmware, backups, NV/EFS, and calibration data.
+          required: true
