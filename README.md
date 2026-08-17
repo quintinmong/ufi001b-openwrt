@@ -22,6 +22,16 @@ DNS/NAT、OverlayFS 和 LED。
 贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)，安全问题见
 [SECURITY.md](SECURITY.md)。
 
+## 实机部署与采用情况
+
+截至 2026-08-17，已有 1 台由主要维护者持有的 UFI001B 刷入本仓库 stable
+构建并投入实际使用，维护者反馈当前体验良好。该设备已验证 RNDIS、Wi-Fi AP、
+LTE、DHCP、DNS/NAT、OverlayFS 持久化、重启恢复和 LED 等关键功能。
+
+这台设备属于维护者，不能代替独立第三方采用量；当前独立用户报告为 0。可追溯
+构建、HIL 结果和计数口径见 [实机部署与采用证据](docs/ADOPTION.md)。使用本项目
+刷机的用户可以通过 Field deployment report Issue 模板提交可公开核验的结果。
+
 ## 安全边界
 
 工程只生成 p12 `boot.img` 和 p14 `rootfs.img`。构建、升级、Release 与 HIL
