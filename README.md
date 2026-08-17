@@ -1,9 +1,26 @@
 # UFI001B OpenWrt firmware
 
+[![Build](https://github.com/quintinmong/ufi001b-openwrt/actions/workflows/build.yml/badge.svg)](https://github.com/quintinmong/ufi001b-openwrt/actions/workflows/build.yml)
+[![Static checks](https://github.com/quintinmong/ufi001b-openwrt/actions/workflows/static.yml/badge.svg)](https://github.com/quintinmong/ufi001b-openwrt/actions/workflows/static.yml)
+
 面向 Qualcomm MSM8916 / PCB `UFI001B` 随身 Wi-Fi 的可复现 OpenWrt 固件工程。
 基线锁定为 OpenWrt `v25.12.5` 与 Linux `6.12`，唯一固件形态是标准
 `SquashFS + OverlayFS`：只读 `/rom` 位于 p14 前部，持久化 F2FS
 `rootfs_data` 使用 p14 剩余空间，`/` 为两者的 OverlayFS 合并视图。
+
+## 项目价值
+
+UFI001B 是一类资源受限、资料分散且刷写风险较高的 Qualcomm MSM8916 随身
+Wi-Fi 设备。本项目把上游版本、补丁、构建输入和验证步骤固定下来，提供可审计、
+可复现的固件流水线，减少依赖来历不明的预编译镜像。构建输出包含 manifest、
+buildinfo、SHA-256 与 SPDX SBOM，并以实机 HIL 验证覆盖 RNDIS、Wi-Fi、LTE、
+DNS/NAT、OverlayFS 和 LED。
+
+项目由 [@quintinmong](https://github.com/quintinmong) 作为主要维护者持续维护。
+问题、硬件兼容性反馈和改进建议请通过
+[GitHub Issues](https://github.com/quintinmong/ufi001b-openwrt/issues) 提交；
+贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)，安全问题见
+[SECURITY.md](SECURITY.md)。
 
 ## 安全边界
 
