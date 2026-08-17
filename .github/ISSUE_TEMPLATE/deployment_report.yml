@@ -1,0 +1,67 @@
+name: Field deployment report
+description: Report a real UFI001B installation without exposing device secrets
+title: "[Field report] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing this firmware on real hardware. Do not include IMEI, SIM/APN details, Wi-Fi passwords, device backups, Qualcomm private firmware, NV/EFS, calibration data, or serial numbers.
+  - type: input
+    id: hardware
+    attributes:
+      label: Hardware
+      description: PCB/device revision; do not include unique identifiers
+      placeholder: Qualcomm MSM8916 / PCB UFI001B
+    validations:
+      required: true
+  - type: input
+    id: provenance
+    attributes:
+      label: Build provenance
+      description: Commit SHA, Release, or GitHub Actions run
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Installation result
+      options:
+        - Successful
+        - Partially successful
+        - Failed and recovered
+        - Failed and needs help
+    validations:
+      required: true
+  - type: checkboxes
+    id: functions
+    attributes:
+      label: Functions tested
+      options:
+        - label: Device boots
+        - label: RNDIS / USB networking
+        - label: Wi-Fi access point
+        - label: LTE / mobile data
+        - label: DHCP and DNS/NAT
+        - label: LuCI or SSH
+        - label: Settings persist after reboot
+        - label: Recovery procedure tested
+  - type: input
+    id: duration
+    attributes:
+      label: Usage period
+      description: Optional approximate duration; do not invent precision
+      placeholder: e.g. 3 days
+  - type: textarea
+    id: experience
+    attributes:
+      label: Experience and limitations
+      description: What worked, what did not, and any recovery required
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I removed credentials, unique device identifiers, private firmware, backups, NV/EFS, and calibration data.
+          required: true
