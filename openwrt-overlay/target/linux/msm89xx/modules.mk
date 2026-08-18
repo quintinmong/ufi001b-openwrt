@@ -1,4 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
+#
+# Copyright (C) 2020-2022 HandsomeMod Project
+#
 
 define KernelPackage/qcom-msm8916-usb
   SUBMENU:=USB Support

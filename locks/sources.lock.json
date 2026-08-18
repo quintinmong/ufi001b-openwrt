@@ -87,6 +87,9 @@
     "mihomo": {
       "url": "https://github.com/MetaCubeX/mihomo.git",
       "version": "v1.19.29",
+      "commit": "e26714a181ac0e2fa803453c0a8e9a9ce94e31cb",
+      "source_url": "https://codeload.github.com/MetaCubeX/mihomo/tar.gz/e26714a181ac0e2fa803453c0a8e9a9ce94e31cb",
+      "source_sha256": "a75220bf11ab56ef0d304c14c4d4c407edffe700761cdcc5b06105dfd8305168",
       "asset": "mihomo-linux-arm64-v1.19.29.gz",
       "asset_url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.29/mihomo-linux-arm64-v1.19.29.gz",
       "asset_size": 16051759,
