@@ -2,6 +2,21 @@
 
 [![Build](https://github.com/quintinmong/ufi001b-openwrt/actions/workflows/build.yml/badge.svg)](https://github.com/quintinmong/ufi001b-openwrt/actions/workflows/build.yml)
 [![Static checks](https://github.com/quintinmong/ufi001b-openwrt/actions/workflows/static.yml/badge.svg)](https://github.com/quintinmong/ufi001b-openwrt/actions/workflows/static.yml)
+[![Latest release](https://img.shields.io/github/v/release/quintinmong/ufi001b-openwrt)](https://github.com/quintinmong/ufi001b-openwrt/releases/latest)
+
+## English overview
+
+This repository builds a reproducible OpenWrt firmware for Qualcomm MSM8916
+portable Wi-Fi devices using the UFI001B PCB. It pins all public inputs, checks
+the p12/p14 write boundary, excludes device-unique and proprietary firmware,
+and publishes manifests, build metadata, SHA-256 checksums, and an SPDX SBOM.
+
+One maintainer-owned device is running the hardware-validated baseline in daily
+use. This is real field evidence, but it is not presented as independent user
+adoption. Start with the [latest release](https://github.com/quintinmong/ufi001b-openwrt/releases/latest),
+[maintainer and ecosystem case](docs/OSS-MAINTAINER.md),
+[governance](GOVERNANCE.md), [deployment evidence](docs/ADOPTION.md), and the
+[flashing and recovery guide](docs/FLASH-AND-RECOVERY.md).
 
 面向 Qualcomm MSM8916 / PCB `UFI001B` 随身 Wi-Fi 的可复现 OpenWrt 固件工程。
 基线锁定为 OpenWrt `v25.12.5` 与 Linux `6.12`，唯一固件形态是标准
@@ -20,7 +35,7 @@ DNS/NAT、OverlayFS 和 LED。
 问题、硬件兼容性反馈和改进建议请通过
 [GitHub Issues](https://github.com/quintinmong/ufi001b-openwrt/issues) 提交；
 贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)，安全问题见
-[SECURITY.md](SECURITY.md)。
+[SECURITY.md](SECURITY.md)，项目决策与发布职责见 [GOVERNANCE.md](GOVERNANCE.md)。
 
 ## 实机部署与采用情况
 
