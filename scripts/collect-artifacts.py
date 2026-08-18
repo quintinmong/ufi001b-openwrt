@@ -26,6 +26,7 @@ def main() -> None:
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args()
     profile = "stable-squashfs"
+    repository_root = Path(__file__).resolve().parents[1]
 
     source = args.tree / "bin/targets/msm89xx/msm8916"
     if not source.is_dir():
@@ -72,6 +73,24 @@ def main() -> None:
             raise SystemExit(f"expected one {prefix} APK, found {len(matches)}")
         destination = args.out / matches[0].name
         shutil.copy2(matches[0], destination)
+        copied.append(destination)
+
+    compliance_files = (
+        (repository_root / "LICENSE", "LICENSE"),
+        (repository_root / "NOTICE.md", "NOTICE.md"),
+        (repository_root / "THIRD_PARTY_NOTICES.md", "THIRD_PARTY_NOTICES.md"),
+        (repository_root / "SOURCE-COMPLIANCE.md", "SOURCE-COMPLIANCE.md"),
+        (repository_root / "locks" / "sources.lock.json", "sources.lock.json"),
+        (
+            repository_root / "package" / "mihomo-openclash" / "files" / "LICENSE",
+            "LICENSE.GPL-3.0-only-Mihomo",
+        ),
+    )
+    for path, artifact_name in compliance_files:
+        if not path.is_file():
+            raise SystemExit(f"required compliance file is missing: {path}")
+        destination = args.out / artifact_name
+        shutil.copy2(path, destination)
         copied.append(destination)
 
     packages = []

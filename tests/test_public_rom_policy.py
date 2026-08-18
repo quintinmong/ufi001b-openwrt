@@ -7,6 +7,35 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PublicRomPolicyTests(unittest.TestCase):
+    def test_license_policy_has_explicit_boundaries(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        notice = (ROOT / "NOTICE.md").read_text(encoding="utf-8")
+        third_party = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+        self.assertIn("GPL-2.0-only", readme)
+        self.assertNotIn("本项目沿用 OpenStick README 的使用声明", readme)
+        self.assertIn("不会给 GPL 代码附加", readme)
+        self.assertIn("does not relicense", notice)
+        self.assertIn("GPL-3.0-only", third_party)
+        self.assertIn("OpenClash MIT notice", third_party)
+        self.assertIn("Proprietary QTI license", third_party)
+
+    def test_release_requires_corresponding_source_and_notices(self):
+        build = (ROOT / ".github/workflows/build.yml").read_text(encoding="utf-8")
+        release = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+        collector = (ROOT / "scripts/collect-artifacts.py").read_text(encoding="utf-8")
+        self.assertIn("collect-corresponding-source.py", build)
+        self.assertIn("ufi001b-corresponding-source", release)
+        self.assertIn("corresponding-source-SHA256SUMS", release)
+        for name in (
+            "LICENSE",
+            "NOTICE.md",
+            "THIRD_PARTY_NOTICES.md",
+            "SOURCE-COMPLIANCE.md",
+            "sources.lock.json",
+            "LICENSE.GPL-3.0-only-Mihomo",
+        ):
+            self.assertIn(name, collector)
+
     def test_public_profile_contains_language_and_led_capability(self):
         config = (ROOT / "configs/stable-squashfs.config").read_text(encoding="utf-8")
         for symbol in (

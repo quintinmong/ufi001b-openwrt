@@ -2,6 +2,21 @@
 
 [![Build](https://github.com/quintinmong/ufi001b-openwrt/actions/workflows/build.yml/badge.svg)](https://github.com/quintinmong/ufi001b-openwrt/actions/workflows/build.yml)
 [![Static checks](https://github.com/quintinmong/ufi001b-openwrt/actions/workflows/static.yml/badge.svg)](https://github.com/quintinmong/ufi001b-openwrt/actions/workflows/static.yml)
+[![Latest release](https://img.shields.io/github/v/release/quintinmong/ufi001b-openwrt)](https://github.com/quintinmong/ufi001b-openwrt/releases/latest)
+
+## English overview
+
+This repository builds a reproducible OpenWrt firmware for Qualcomm MSM8916
+portable Wi-Fi devices using the UFI001B PCB. It pins all public inputs, checks
+the p12/p14 write boundary, excludes device-unique and proprietary firmware,
+and publishes manifests, build metadata, SHA-256 checksums, and an SPDX SBOM.
+
+One maintainer-owned device is running the hardware-validated baseline in daily
+use. This is real field evidence, but it is not presented as independent user
+adoption. Start with the [latest release](https://github.com/quintinmong/ufi001b-openwrt/releases/latest),
+[maintainer and ecosystem case](docs/OSS-MAINTAINER.md),
+[governance](GOVERNANCE.md), [deployment evidence](docs/ADOPTION.md), and the
+[flashing and recovery guide](docs/FLASH-AND-RECOVERY.md).
 
 面向 Qualcomm MSM8916 / PCB `UFI001B` 随身 Wi-Fi 的可复现 OpenWrt 固件工程。
 基线锁定为 OpenWrt `v25.12.5` 与 Linux `6.12`，唯一固件形态是标准
@@ -20,7 +35,7 @@ DNS/NAT、OverlayFS 和 LED。
 问题、硬件兼容性反馈和改进建议请通过
 [GitHub Issues](https://github.com/quintinmong/ufi001b-openwrt/issues) 提交；
 贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)，安全问题见
-[SECURITY.md](SECURITY.md)。
+[SECURITY.md](SECURITY.md)，项目决策与发布职责见 [GOVERNANCE.md](GOVERNANCE.md)。
 
 ## 实机部署与采用情况
 
@@ -41,13 +56,18 @@ IMEI、EFS 或 Wi-Fi 校准分区。
 全盘备份、Qualcomm 固件、校准数据、SIM 信息、代理订阅和密钥均由
 `.gitignore` 排除，不得进入 Git、Actions artifact 或公开 Release。
 
-## 授权与使用声明
+## 许可证与再分发
 
-本项目沿用 OpenStick README 的使用声明：项目公开可见，但禁止商用。商用
-行为包括售卖原本免费开放下载的系统镜像及衍生品、收费发布相关构建产物，
-以及大规模批量售卖搭载 OpenStick Linux 的设备。涉及 Qualcomm firmware 的
-二进制另受 QTI 原许可证约束；本仓库不保存或公开分发这些二进制。完整来源
-和固定上游版本见 [NOTICE.md](NOTICE.md)。
+除文件中另有标注外，本仓库由项目维护者原创的代码以
+[`GPL-2.0-only`](LICENSE) 提供。仓库和固件包含采用其他许可证的独立上游
+组件；顶层许可证不会重新许可这些组件，也不会给 GPL 代码附加“禁止商用”
+等额外限制。逐项范围、版权和许可证见
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+
+Qualcomm firmware 二进制属于专有材料，不属于本项目 GPL 授权范围，也不得
+进入公开 Git、Actions artifact 或 Release。公开二进制的对应源码提供方式见
+[SOURCE-COMPLIANCE.md](SOURCE-COMPLIANCE.md)，完整固定来源见
+[NOTICE.md](NOTICE.md)。
 
 ## 构建
 

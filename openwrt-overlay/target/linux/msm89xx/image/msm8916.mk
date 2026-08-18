@@ -1,4 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
+#
+# Copyright (C) 2020-2022 HandsomeMod Project
+#
 
 define Device/handsome_openstick-ufi001b
   DEVICE_VENDOR := Handsome

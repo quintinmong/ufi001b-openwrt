@@ -62,10 +62,25 @@ jobs:
           run-id: ${{ inputs.run_id }}
           github-token: ${{ github.token }}
 
+      - name: Download corresponding source
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ufi001b-corresponding-source
+          path: release/corresponding-source
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+
       - name: Refuse private firmware
         run: |
           if grep -R -E 'qcom-ufi001b-(modem|wcnss)' release --include='*.manifest'; then
             echo 'private Qualcomm firmware must never enter a public release' >&2
+            exit 1
+          fi
+          if find release/corresponding-source -type f \
+              \( -iname '*qcom-firmware*' -o -iname '*private-key*' \
+                 -o -iname '*openstick-ufi001b-modem*' -o -iname '*openstick-ufi001b-nv*' \) \
+              -print | grep -q .; then
+            echo 'private or proprietary material found in source assets' >&2
             exit 1
           fi
 
@@ -78,7 +93,18 @@ jobs:
           test "$(find release/stable-squashfs -maxdepth 1 -name 'luci-app-openclash-*.apk' | wc -l)" -eq 1
           test "$(find release/stable-squashfs -maxdepth 1 -name 'mihomo-openclash-*.apk' | wc -l)" -eq 1
           test "$(find release/stable-squashfs -maxdepth 1 -name 'apk-signing-public-key.pem' | wc -l)" -eq 1
+          for name in LICENSE LICENSE.GPL-3.0-only-Mihomo NOTICE.md THIRD_PARTY_NOTICES.md SOURCE-COMPLIANCE.md sources.lock.json; do
+            test -f "release/stable-squashfs/$name"
+          done
           (cd release/stable-squashfs && sha256sum -c SHA256SUMS)
+          test "$(find release/corresponding-source -maxdepth 1 -name 'ufi001b-openwrt-corresponding-source.tar.zst' | wc -l)" -eq 1
+          test -f release/corresponding-source/corresponding-source-SHA256SUMS
+          (cd release/corresponding-source && sha256sum -c corresponding-source-SHA256SUMS)
+          if tar --zstd -tf release/corresponding-source/ufi001b-openwrt-corresponding-source.tar.zst | \
+              grep -E '(^|/)(private-key\.pem|qcom-firmware[^/]*\.(tar|gz|xz|zst|bin)|openstick-ufi001b-(modem|nv)[^/]*)$'; then
+            echo 'forbidden private or proprietary content found inside source archive' >&2
+            exit 1
+          fi
           test -n "$EXPECTED_APK_KEY_SHA256"
           stable_key_sha="$(sha256sum release/stable-squashfs/apk-signing-public-key.pem | cut -d' ' -f1)"
           test "$stable_key_sha" = "$EXPECTED_APK_KEY_SHA256"

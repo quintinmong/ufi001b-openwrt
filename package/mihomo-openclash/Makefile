@@ -9,6 +9,7 @@ PKG_SOURCE:=mihomo-linux-arm64-v$(PKG_VERSION).gz
 PKG_SOURCE_URL:=https://github.com/MetaCubeX/mihomo/releases/download/v$(PKG_VERSION)/
 PKG_HASH:=9a868b5e4e0ad91d9d71e1b41b0cfce78aaba44360c30df74a723f8e3926a86c
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
+PKG_LICENSE:=GPL-3.0-only
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -38,6 +39,8 @@ endef
 define Package/mihomo-openclash/install
 	$(INSTALL_DIR) $(1)/etc/openclash/core
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/clash_meta $(1)/etc/openclash/core/clash_meta
+	$(INSTALL_DIR) $(1)/usr/share/licenses/mihomo
+	$(INSTALL_DATA) $(CURDIR)/files/LICENSE $(1)/usr/share/licenses/mihomo/LICENSE
 endef
 
 $(eval $(call BuildPackage,mihomo-openclash))

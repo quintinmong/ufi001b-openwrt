@@ -88,6 +88,13 @@ jobs:
           export APK_SIGNING_KEY_FILE="$key_file"
           scripts/build.sh
 
+      - name: Collect complete corresponding source
+        if: github.event_name != 'pull_request'
+        run: |
+          python3 scripts/collect-corresponding-source.py \
+            --tree "$BUILD_ROOT/openwrt" \
+            --out out/corresponding-source
+
       - name: Verify repository signing identity
         if: github.event_name != 'pull_request'
         env:
@@ -105,6 +112,15 @@ jobs:
         with:
           name: ufi001b-stable-squashfs
           path: out/stable-squashfs/
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Upload corresponding source
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: ufi001b-corresponding-source
+          path: out/corresponding-source/
           if-no-files-found: error
           retention-days: 3
 
