@@ -81,16 +81,17 @@
     },
     "openclash": {
       "url": "https://github.com/vernesong/OpenClash.git",
-      "version": "v0.47.133",
-      "commit": "a9e5d98cd664917724dbfb0a31440e512ab45a1b"
+      "version": "v0.47.156",
+      "commit": "c3a33c1d3407956fdf8f0e0b7c1a4c52e6ad9593"
     },
     "mihomo": {
       "url": "https://github.com/MetaCubeX/mihomo.git",
-      "version": "v1.19.29",
-      "asset": "mihomo-linux-arm64-v1.19.29.gz",
-      "asset_url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.29/mihomo-linux-arm64-v1.19.29.gz",
-      "asset_size": 16051759,
-      "asset_sha256": "9a868b5e4e0ad91d9d71e1b41b0cfce78aaba44360c30df74a723f8e3926a86c"
+      "version": "v1.19.30",
+      "asset": "mihomo-linux-arm64-v1.19.30.gz",
+      "asset_url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.30/mihomo-linux-arm64-v1.19.30.gz",
+      "asset_size": 16965828,
+      "asset_sha256": "58896873736d28628f66de3677c8654fa0f180662523148e136cff4f6e890069",
+      "commit": "ac017cdd246ce8bd547653d927e7bf77d7ee73d5"
     }
   }
 }
