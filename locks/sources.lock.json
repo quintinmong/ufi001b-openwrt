@@ -4,23 +4,23 @@
   "sources": {
     "openwrt": {
       "url": "https://github.com/openwrt/openwrt.git",
-      "version": "v25.12.5",
-      "commit": "f0a60eee2fe051741c643ea6118718aae1ef17fb"
+      "version": "v25.12.6",
+      "commit": "64900e756efa667774214f9c6b17c113222e01f7"
     },
     "packages": {
       "url": "https://github.com/openwrt/packages.git",
       "branch": "openwrt-25.12",
-      "commit": "5caa62e0bc9f7fb9b0c12a23267bceb7724214dd"
+      "commit": "093d551675b1119a06ef224d419905e8d6b2af1a"
     },
     "luci": {
       "url": "https://github.com/openwrt/luci.git",
       "branch": "openwrt-25.12",
-      "commit": "128a7812f4be233c5dd7f7466f534fd888785caf"
+      "commit": "75a306df84a020c57a631ef5b4c02ace56d93387"
     },
     "routing": {
       "url": "https://github.com/openwrt-routing/packages.git",
       "branch": "openwrt-25.12",
-      "commit": "3d7d0dc7fa43d3eb09498417407e95a6552e5312"
+      "commit": "48c808034414a2112cf9d5261a20a320e8d0d170"
     },
     "telephony": {
       "url": "https://github.com/openwrt/telephony.git",
@@ -81,16 +81,17 @@
     },
     "openclash": {
       "url": "https://github.com/vernesong/OpenClash.git",
-      "version": "v0.47.133",
-      "commit": "a9e5d98cd664917724dbfb0a31440e512ab45a1b"
+      "version": "v0.48.002",
+      "commit": "e553e82e01c697aefbe1555261a503f425e00ccd"
     },
     "mihomo": {
       "url": "https://github.com/MetaCubeX/mihomo.git",
-      "version": "v1.19.29",
-      "asset": "mihomo-linux-arm64-v1.19.29.gz",
-      "asset_url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.29/mihomo-linux-arm64-v1.19.29.gz",
-      "asset_size": 16051759,
-      "asset_sha256": "9a868b5e4e0ad91d9d71e1b41b0cfce78aaba44360c30df74a723f8e3926a86c"
+      "version": "v1.19.33",
+      "asset": "mihomo-linux-arm64-v1.19.33.gz",
+      "asset_url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.33/mihomo-linux-arm64-v1.19.33.gz",
+      "asset_size": 20824326,
+      "asset_sha256": "ba408b317080ee265c46cb923a50018c1b82cbd708551cdd46a1e3e307396187",
+      "commit": "3f27ef39f8c96bbfbc8b0b9bb10f5c9ef60149d8"
     }
   }
 }
