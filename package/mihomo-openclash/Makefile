@@ -3,11 +3,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mihomo-openclash
-PKG_VERSION:=1.19.29
+PKG_VERSION:=1.19.33
 PKG_RELEASE:=1
 PKG_SOURCE:=mihomo-linux-arm64-v$(PKG_VERSION).gz
 PKG_SOURCE_URL:=https://github.com/MetaCubeX/mihomo/releases/download/v$(PKG_VERSION)/
-PKG_HASH:=9a868b5e4e0ad91d9d71e1b41b0cfce78aaba44360c30df74a723f8e3926a86c
+PKG_HASH:=ba408b317080ee265c46cb923a50018c1b82cbd708551cdd46a1e3e307396187
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
